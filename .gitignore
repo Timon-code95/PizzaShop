@@ -1,0 +1,42 @@
+## .NET / Visual Studio
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+# Rider / ReSharper
+.idea/
+*.DotSettings.user
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+artifacts/

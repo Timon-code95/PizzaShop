@@ -1,0 +1,113 @@
+# Livello 3 — Component Diagram
+
+> **Caso d'uso**: composizione di un ordine e calcolo del totale (vedi [README](README.md#il-caso-duso-scelto-per-la-demo)).
+
+Si "apre" il sistema **PizzaShop** un livello più a fondo rispetto al [Container Diagram](02-container-diagram.md):
+**UI**, **BDD Tests** e **Database** restano containers non ulteriormente scomposti (esattamente come, nell'esempio
+ufficiale del C4 Model, la SPA e il Database restano containers mentre solo il Backend viene aperto), mentre il
+container **Backend** viene "aperto" nei suoi componenti.
+
+A differenza di una prima bozza di questo documento, i componenti **non** ricalcano le singole classi C# — quel
+livello di dettaglio appartiene al [Livello 4 — Code](04-code-level-note.md), che mostra già il class diagram di
+`Order`, `Pizza`, `ToppingCatalog` e `DiscountPolicy`. Qui, coerentemente con la definizione di "componente" del C4
+Model (un raggruppamento di funzionalità correlate dietro un'interfaccia, tipicamente corrispondente a un
+namespace o assembly), il Backend viene scomposto in **4 componenti**:
+
+- **Order API**: il punto di ingresso HTTP.
+- **Security Component**: valida l'identità del cliente delegando all'Identity Provider esterno (non avendo una
+  logica di sicurezza propria oltre alla delega, non ha senso separarlo in "Security Component" + "Identity
+  Provider Adapter": è un unico componente che incapsula quella responsabilità).
+- **Order Management Component**: tutta la logica di business già implementata (composizione pizze, topping,
+  sconti, consegna) — corrisponde 1:1 alla libreria `PizzaShop.Domain`.
+- **Payment/Notification Adapter**: due adapter distinti verso i rispettivi sistemi esterni (pattern usato anche
+  nell'esempio ufficiale per isolare la logica di business dai dettagli di integrazione).
+
+```mermaid
+C4Component
+	title Component Diagram — PizzaShop (focus: Backend)
+
+	UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+
+	System_Boundary(pizzaShop, "PizzaShop") {
+		Container(testBdd, "BDD Tests", "Reqnroll + xUnit", "Verifica le regole di business tramite scenari Gherkin eseguibili")
+		ContainerDb(database, "Database", "SQL Server", "Persiste ordini, catalogo topping e regole di sconto")
+		Container(ui, "UI", "Angular", "Interfaccia da cui il cliente compone l'ordine")
+
+		Container_Boundary(backend, "Backend") {
+			Component(orderManagement, "Order Management Component", "C# (PizzaShop.Domain)", "Compone pizze e topping, calcola subtotale, sconto, consegna e totale finale")
+			Component(orderApi, "Order API", "ASP.NET Core Web API", "Endpoint che riceve le richieste di composizione ordine dalla UI")
+			Component(securityComponent, "Security Component", "C#", "Valida l'identità del cliente delegando all'Identity Provider esterno")
+			Component(paymentAdapter, "Payment Gateway Adapter", "C#", "Un layer sottile attorno alle API esposte dal gateway di pagamento")
+			Component(notificationAdapter, "Notification Adapter", "C#", "Un layer sottile attorno alle API esposte dal servizio di notifiche")
+		}
+	}
+
+	Boundary(servizi, "External Systems") {
+		System_Ext(gatewayPagamenti, "Gateway di pagamento", "Servizio esterno per l'incasso dei pagamenti")
+		System_Ext(notifiche, "Servizio di notifiche", "Invia SMS/email di conferma ordine")
+		System_Ext(identityProvider, "Identity Provider", "Servizio esterno di autenticazione e gestione utenti")
+	}
+
+	Rel(ui, orderApi, "Richiede la composizione dell'ordine tramite", "JSON/HTTP")
+	Rel(testBdd, orderManagement, "Verifica", ".NET")
+	Rel(orderApi, securityComponent, "Valida il token di<br/>autenticazione tramite")
+	Rel(securityComponent, identityProvider, "Fa richieste a", "OAuth2/OIDC")
+	Rel(orderApi, orderManagement, "Inoltra la<br/>richiesta a")
+	Rel(orderManagement, database, "Legge da e scrive su", "SQL")
+	Rel(orderManagement, paymentAdapter, "Richiede l'incasso del totale tramite")
+	Rel(orderManagement, notificationAdapter, "Richiede l'invio della conferma tramite")
+	Rel(paymentAdapter, gatewayPagamenti, "Fa richieste a", "HTTPS/REST")
+	Rel(notificationAdapter, notifiche, "Fa richieste a", "HTTPS/REST")
+
+	UpdateRelStyle(ui, orderApi, $textColor="white", $lineColor="white", $offsetX="20", $offsetY="-15")
+	UpdateRelStyle(testBdd, orderManagement, $textColor="white", $lineColor="white", $offsetX="-10", $offsetY="5")
+	UpdateRelStyle(orderApi, securityComponent, $textColor="white", $lineColor="white", $offsetX="-40", $offsetY="-35")
+	UpdateRelStyle(securityComponent, identityProvider, $textColor="white", $lineColor="white", $offsetX="10")
+	UpdateRelStyle(orderApi, orderManagement, $textColor="white", $lineColor="white", $offsetX="-30", $offsetY="30")
+	UpdateRelStyle(orderManagement, database, $textColor="white", $lineColor="white", $offsetX="-10", $offsetY="15")
+	UpdateRelStyle(orderManagement, paymentAdapter, $textColor="white", $lineColor="white", $offsetX="-50", $offsetY="-10")
+	UpdateRelStyle(orderManagement, notificationAdapter, $textColor="white", $lineColor="white", $offsetY="10")
+	UpdateRelStyle(paymentAdapter, gatewayPagamenti, $textColor="white", $lineColor="white", $offsetX="10", $offsetY="-10")
+	UpdateRelStyle(notificationAdapter, notifiche, $textColor="white", $lineColor="white", $offsetX="10", $offsetY="10")
+```
+
+## Note di lettura
+- `System_Boundary(...)`: il confine del sistema `PizzaShop` nel suo complesso — lo stesso usato nel
+  [Container Diagram](02-container-diagram.md) — che qui contiene sia i container non scomposti (**UI**, **BDD
+  Tests**, **Database**) sia il container **Backend**, ulteriormente aperto nei suoi componenti. Questo rispecchia
+  la struttura dell'esempio ufficiale (Internet Banking System), dove la SPA e il Database restano a livello
+  container mentre solo l'API Application viene scomposta.
+- `Container(...)` / `ContainerDb(...)`: usati qui per **UI**, **BDD Tests** e **Database** perché a questo livello
+  di zoom non ci interessa mostrarne i componenti interni — sono "di contesto", stessa tecnica dell'esempio
+  ufficiale per SPA e Database.
+- `Container_Boundary(...)`: il confine del container che stiamo "aprendo" (qui il Backend).
+- `Component(...)`: un raggruppamento di funzionalità correlate dietro un'interfaccia — **non** corrisponde a una
+  singola classe. Solo **Order Management Component** è già implementato (nella libreria `PizzaShop.Domain`); gli
+  altri tre fanno parte del design ma sono ancora da realizzare (vedi tabella in fondo).
+- **Perché Security Component e Identity Provider Adapter sono stati unificati**: in una versione precedente di
+  questo documento erano due componenti distinti, ma la responsabilità dell'adapter (parlare con l'Identity
+  Provider via OAuth2/OIDC) *è* l'unica logica di sicurezza che il Backend possiede in questo caso d'uso — non
+  c'è una logica di validazione locale da separare da un layer di comunicazione. Un solo componente **Security
+  Component** rappresenta quindi meglio la responsabilità reale senza introdurre una distinzione artificiale.
+- Il pattern **Adapter** (`Payment Gateway Adapter`, `Notification Adapter`) isola la logica di business dai
+  dettagli delle singole integrazioni esterne, esattamente come nell'esempio ufficiale del C4 Model.
+- La relazione `Order Management Component → Database` è l'unico punto di accesso ai dati: prima era presente ma
+  difficile da individuare in un diagramma con troppi componenti; ora è una singola freccia ben visibile.
+- `UpdateRelStyle(...)`: forza il colore di testo e linea delle relazioni in bianco, per restare leggibili anche
+  su renderer con sfondo scuro (es. tema di default di mermaid.live), e sposta le etichette con
+  `$offsetX`/`$offsetY` per evitare sovrapposizioni con i box esterni.
+
+## Corrispondenza con il codice
+| Componente nel diagramma | Stato nella solution attuale |
+|---|---|
+| Order Management Component | Implementato: libreria `PizzaShop.Domain` (`Order.cs`, `Pizza.cs`, `ToppingCatalog.cs`, `DiscountPolicy.cs`) |
+| Order API | Non ancora implementato |
+| Security Component | Non ancora implementato |
+| Payment Gateway Adapter | Non ancora implementato |
+| Notification Adapter | Non ancora implementato |
+
+Le classi reali che compongono l'**Order Management Component** (`Order`, `Pizza`, `ToppingCatalog`,
+`DiscountPolicy`, con i relativi campi e metodi) sono mostrate nel dettaglio nel
+[Livello 4 — Code](04-code-level-note.md), il livello di zoom corretto per scendere fino alle singole classi.
+Le stesse regole di business sono quelle verificate dagli scenari Gherkin descritti in
+[docs/gherkin-cucumber](../gherkin-cucumber/README.md).

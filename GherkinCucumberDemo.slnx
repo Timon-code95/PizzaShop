@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GherkinCucumberDemo.csproj" />
+  <Project Path="PizzaShop.Domain/PizzaShop.Domain.csproj" />
+  <Project Path="PizzaShop.Bdd.Tests/PizzaShop.Bdd.Tests.csproj" />
+</Solution>
+
