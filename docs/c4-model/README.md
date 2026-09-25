@@ -26,7 +26,7 @@ Markdown e quindi versionabili in Git come il resto del codice ("architecture as
 > (VS Code con l'estensione Mermaid, [mermaid.live](https://mermaid.live), o GitHub). Se il tuo strumento non li
 > renderizza, il codice Mermaid resta comunque leggibile come testo strutturato.
 
-## I 4 livelli (+ sequence diagram)
+## I 4 livelli (+ sequence diagram + modello E/R)
 
 | Livello | Nome | Risponde alla domanda | File |
 |---|---|---|---|
@@ -36,6 +36,7 @@ Markdown e quindi versionabili in Git come il resto del codice ("architecture as
 | 4 | **Code** | Come sono fatte le classi di un componente? | [04-code-level-note.md](04-code-level-note.md) |
 | — | **Code — Guida di lettura** | Come si legge, simbolo per simbolo, il class diagram del livello 4? | [04a-class-diagram-spiegazione.md](04a-class-diagram-spiegazione.md) |
 | 4 | **Code — Sequence** | Come interagiscono le classi nel tempo per il caso d'uso scelto? | [05-sequence-diagram.md](05-sequence-diagram.md) |
+| 4 | **Code — E/R** | Come sarebbe strutturato il database dietro al Data Access Component? | [06-er-model.md](06-er-model.md) |
 
 ### Livello 1 — System Context
 La vista più "zoomata fuori": mostra il sistema come una singola scatola, le **persone** che lo usano e gli
@@ -54,8 +55,9 @@ container.
 ### Livello 4 — Code
 Il livello più dettagliato: le singole classi, con attributi e metodi (tipicamente un class diagram UML), e —
 come previsto dai requisiti di documentazione per questo livello — anche un **sequence diagram** che mostra come
-le classi collaborano nel tempo per il caso d'uso scelto. Nella pratica il class diagram **è il livello meno
-usato e mantenuto a mano**: si genera facilmente dall'IDE quando serve, invece di tenerlo aggiornato
+le classi collaborano nel tempo per il caso d'uso scelto, ed eventualmente un **modello E/R** quando il componente
+dipende da un database (il nostro caso, tramite il Data Access Component). Nella pratica il class diagram **è il
+livello meno usato e mantenuto a mano**: si genera facilmente dall'IDE quando serve, invece di tenerlo aggiornato
 manualmente. Per questo nel nostro esempio è solo una nota con un piccolo diagramma illustrativo, non un
 documento "vivo" da mantenere.
 
@@ -67,7 +69,7 @@ di business (`PizzaShop.Domain`, verificata da `PizzaShop.Bdd.Tests`), richiamat
 (`GherkinCucumberDemo`) che simula il ruolo della UI; gli altri elementi del design (UI web reale, Backend
 esposto via API, database, autenticazione, pagamento, notifiche) sono ancora da realizzare. Ogni diagramma
 riporta in fondo una tabella che distingue cosa è già implementato da cosa fa parte del design ma non ancora
-scritto in codice. Tutti e 4 i livelli (più il sequence diagram) sono circoscritti al singolo caso d'uso descritto
-sopra: lo scopo non è mostrare un'architettura cloud complessa o l'intero sistema, ma far vedere **come si
-scrive** un diagramma C4 per un caso d'uso specifico e come i 4 livelli si "incastrano" tra loro (il container
-del livello 2 diventa il confine del componente del livello 3, e così via).
+scritto in codice. Tutti e 4 i livelli (più il sequence diagram e il modello E/R) sono circoscritti al singolo
+caso d'uso descritto sopra: lo scopo non è mostrare un'architettura cloud complessa o l'intero sistema, ma far
+vedere **come si scrive** un diagramma C4 per un caso d'uso specifico e come i 4 livelli si "incastrano" tra loro
+(il container del livello 2 diventa il confine del componente del livello 3, e così via).
