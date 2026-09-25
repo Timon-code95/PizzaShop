@@ -6,8 +6,7 @@ stessa delle mappe: si parte da una vista molto ampia (il "mondo" attorno al sis
 esattamente come Google Maps passa da "il pianeta" a "la strada".
 
 ## Il caso d'uso scelto per la demo
-Come da indicazione del cliente ("non vi chiedo di progettare un sistema completo, ma di concentrarvi su un caso
-d'uso di questo sistema"), questa documentazione non copre l'intero sistema PizzaShop, ma un unico caso d'uso, che
+Questa documentazione non copre l'intero sistema PizzaShop, ma un unico caso d'uso, che
 nei diagrammi chiamiamo **Sistema Ordini** per distinguerlo dal nome dell'applicazione (**PizzaShop**):
 
 > **Composizione di un ordine e calcolo del totale** — il cliente compone un ordine con una o più pizze,
@@ -35,6 +34,7 @@ Markdown e quindi versionabili in Git come il resto del codice ("architecture as
 | 2 | **Container** | Di quali "pezzi" deployabili/eseguibili è fatto il sistema? | [02-container-diagram.md](02-container-diagram.md) |
 | 3 | **Component** | Di quali componenti/moduli logici è fatto un singolo container? | [03-component-diagram.md](03-component-diagram.md) |
 | 4 | **Code** | Come sono fatte le classi di un componente? | [04-code-level-note.md](04-code-level-note.md) |
+| — | **Code — Guida di lettura** | Come si legge, simbolo per simbolo, il class diagram del livello 4? | [04a-class-diagram-spiegazione.md](04a-class-diagram-spiegazione.md) |
 | 4 | **Code — Sequence** | Come interagiscono le classi nel tempo per il caso d'uso scelto? | [05-sequence-diagram.md](05-sequence-diagram.md) |
 
 ### Livello 1 — System Context
