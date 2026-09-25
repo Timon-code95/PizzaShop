@@ -53,10 +53,11 @@ container.
 
 ### Livello 4 — Code
 Il livello più dettagliato: le singole classi, con attributi e metodi (tipicamente un class diagram UML), e —
-su richiesta esplicita del cliente — anche un **sequence diagram** che mostra come le classi collaborano nel
-tempo per il caso d'uso scelto. Nella pratica il class diagram **è il livello meno usato e mantenuto a mano**:
-si genera facilmente dall'IDE quando serve, invece di tenerlo aggiornato manualmente. Per questo nel nostro
-esempio è solo una nota con un piccolo diagramma illustrativo, non un documento "vivo" da mantenere.
+come previsto dai requisiti di documentazione per questo livello — anche un **sequence diagram** che mostra come
+le classi collaborano nel tempo per il caso d'uso scelto. Nella pratica il class diagram **è il livello meno
+usato e mantenuto a mano**: si genera facilmente dall'IDE quando serve, invece di tenerlo aggiornato
+manualmente. Per questo nel nostro esempio è solo una nota con un piccolo diagramma illustrativo, non un
+documento "vivo" da mantenere.
 
 ## Come si applica a PizzaShop
 I diagrammi Container e Component descrivono il **design** completo del sistema PizzaShop per il caso d'uso

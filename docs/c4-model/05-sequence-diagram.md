@@ -1,7 +1,7 @@
 # Livello 4 — Sequence Diagram
 
-Il cliente ci ha chiesto esplicitamente, per il livello 4 (Code), **almeno un sequence diagram e un class
-diagram** ("UML puro"), oltre ai 4 livelli standard del C4 Model. Il [class diagram](04-code-level-note.md) è già
+Per il livello 4 (Code) i requisiti di documentazione prevedono, oltre ai 4 livelli standard del C4 Model,
+**almeno un sequence diagram e un class diagram** ("UML puro"). Il [class diagram](04-code-level-note.md) è già
 documentato; questo file aggiunge il sequence diagram, con la sintassi `sequenceDiagram` di Mermaid.
 
 Il diagramma descrive il **caso d'uso scelto per la demo**: *"Il cliente compone un ordine con una o più pizze,
