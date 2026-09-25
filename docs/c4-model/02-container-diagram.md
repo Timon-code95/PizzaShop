@@ -24,9 +24,9 @@ C4Container
 
 	System_Boundary(pizzaShop, "PizzaShop") {
 		Container(ui, "UI", "Angular", "Interfaccia web da cui il cliente compone l'ordine e ne vede il riepilogo")
-		Container(backend, "Backend", "ASP.NET Core Web API (.NET 10)", "Espone le regole di business: composizione pizze, topping, sconti, consegna")
+		Container(backend, "Backend", "ASP.NET Core Web API (.NET 10)", "Espone le regole di business: composizione pizze, topping, consegna")
 		Container(testBdd, "BDD Tests", "Reqnroll + xUnit", "Verifica le regole di business tramite scenari Gherkin eseguibili")
-		ContainerDb(database, "Database", "SQL Server", "Persiste ordini, catalogo topping e regole di sconto")
+		ContainerDb(database, "Database", "SQL Server", "Persiste ordini, catalogo topping e regole di prezzo")
 	}
 
 	Boundary(servizi, "External Systems") {

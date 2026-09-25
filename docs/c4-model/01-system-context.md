@@ -15,11 +15,11 @@ C4Context
 
 	Boundary(utenti, "Users") {
 		Person(cliente, "Cliente", "Un cliente che vuole ordinare una pizza")
-		Person(gestore, "Gestore pizzeria", "Definisce il menu, i prezzi e le regole di sconto")
+		Person(gestore, "Gestore pizzeria", "Definisce il menu, i prezzi e la soglia di consegna gratuita")
 	}
 
 	Boundary(sistema, "System") {
-		System(pizzaShop, "PizzaShop", "Permette di comporre pizze, calcolare prezzi, sconti e consegna")
+		System(pizzaShop, "PizzaShop", "Permette di comporre pizze, calcolare prezzi e consegna")
 	}
 
 	Boundary(servizi, "External Systems") {
@@ -29,7 +29,7 @@ C4Context
 	}
 
 	Rel(cliente, pizzaShop, "Compone un ordine, vede il totale")
-	Rel(gestore, pizzaShop, "Configura menu, ingredienti e regole di sconto")
+	Rel(gestore, pizzaShop, "Configura menu, ingredienti e soglia di consegna gratuita")
 	Rel(pizzaShop, identityProvider, "Valida l'identità del cliente tramite", "OAuth2/OIDC")
 	Rel(pizzaShop, gatewayPagamenti, "Gestisce i pagamenti tramite", "HTTPS/REST")
 	Rel(pizzaShop, notifiche, "Richiede l'invio della conferma", "HTTPS/REST")

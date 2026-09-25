@@ -130,56 +130,75 @@ UML**: etichette che aggiungono un'informazione extra sul "tipo" della classe, c
 ```mermaid
 classDiagram
 	class Pizza {
-		+const int MaxToppings = 5
+		-decimal _basePrice
 		+PizzaSize Size
 		+IReadOnlyList~Topping~ Toppings
-		+AddTopping(Topping topping) void
+		+AddTopping(Topping topping, PricingSettings settings) void
 		+CalculatePrice() decimal
 	}
 ```
 
 Corrisponde a [`Pizza.cs`](../../PizzaShop.Domain/Pizza.cs). Rappresenta una singola pizza:
 
-- `MaxToppings = 5`: regola di business, il numero massimo di ingredienti extra aggiungibili.
-- `Size`: il formato della pizza (vedi [`PizzaSize`](#33-pizzasize)).
+- `_basePrice`: prezzo base per il formato scelto, ricevuto dal costruttore (vedi nota sotto) e conservato
+  internamente — non è un parametro passato a ogni chiamata, ma uno stato della pizza fissato alla creazione.
+- `Size`: il formato della pizza (vedi [`PizzaSize`](#43-pizzasize)).
 - `Toppings`: la lista (di sola lettura dall'esterno) degli ingredienti extra aggiunti finora.
-- `AddTopping(...)`: aggiunge un ingrediente extra (lancia un'eccezione se si supera `MaxToppings`, ma questo
-  dettaglio *comportamentale* non compare qui — è nel codice e nel sequence diagram).
-- `CalculatePrice()`: calcola il prezzo totale della pizza (base + ingredienti).
+- `AddTopping(Topping topping, PricingSettings settings)`: aggiunge un ingrediente extra (lancia un'eccezione
+  se si supera `settings.MaxToppingsPerPizza`, ma questo dettaglio *comportamentale* non compare qui — è nel
+  codice e nel sequence diagram).
+- `CalculatePrice()`: calcola il prezzo totale della pizza (`_basePrice` + ingredienti).
+
+> **Nota**: nel codice demo attuale il limite di ingredienti extra è la costante `MaxToppings = 5` dichiarata
+> dentro `Pizza` stessa. Qui il diagramma mostra una versione **realistica** in cui quel limite è configurabile
+> dal proprietario della pizzeria (quindi letto da un database): non è più una costante interna a `Pizza`, ma
+> arriva dall'esterno tramite il parametro `settings` (vedi [`PricingSettings`](#48-pricingsettings)).
+> `Pizza` resta comunque un'entità "pura": non sa nulla di database o repository, riceve solo il valore già
+> pronto — vedi la sezione 5.3 per il perché di questa scelta.
+>
+> Lo stesso vale per il prezzo base: nel codice demo attuale `CalculatePrice()` non prende parametri e calcola
+> `Size.BasePrice() + _toppings.Sum(...)`, dove `BasePrice()` è un metodo di estensione con valori hardcoded.
+> Qui invece il prezzo base viene risolto da chi crea l'ordine (tramite
+> [`IPizzaSizeRepository`](#43bis-ipizzasizerepository)) e passato al **costruttore** di `Pizza`
+> (`new Pizza(size, basePrice)`), che lo salva in `_basePrice`. Per questo `CalculatePrice()` non ha bisogno di
+> alcun parametro: il valore è già disponibile internamente, esattamente come avviene per i `Topping` già
+> aggiunti — `Pizza` continua a non sapere nulla di database o repository.
 
 ### 4.2 `Order`
 
 ```mermaid
 classDiagram
 	class Order {
-		+const decimal FreeDeliveryThreshold = 25.00
 		+const decimal StandardDeliveryFee = 3.50
 		+string CustomerName
 		+IReadOnlyList~Pizza~ Pizzas
 		+AddPizza(Pizza pizza) void
 		+Subtotal() decimal
-		+Discount() decimal
-		+TotalAfterDiscount() decimal
-		+HasFreeDelivery() bool
-		+DeliveryFee() decimal
-		+GrandTotal() decimal
+		+HasFreeDelivery(PricingSettings settings) bool
+		+DeliveryFee(PricingSettings settings) decimal
+		+GrandTotal(PricingSettings settings) decimal
 	}
 ```
 
 Corrisponde a [`Order.cs`](../../PizzaShop.Domain/Order.cs). Rappresenta l'ordine del cliente, con una o più
 pizze:
 
-- `FreeDeliveryThreshold = 25.00`: soglia oltre la quale la consegna è gratuita.
 - `StandardDeliveryFee = 3.50`: costo di consegna standard, se sotto soglia.
 - `CustomerName`: nome del cliente che ha fatto l'ordine.
 - `Pizzas`: la lista delle pizze incluse nell'ordine.
 - `AddPizza(...)`: aggiunge una pizza all'ordine.
-- `Subtotal()`: somma dei prezzi di tutte le pizze, prima dello sconto.
-- `Discount()`: importo dello sconto applicato (delega a [`DiscountPolicy`](#35-discountpolicy)).
-- `TotalAfterDiscount()`: subtotale meno sconto.
-- `HasFreeDelivery()`: `true` se il totale scontato supera `FreeDeliveryThreshold`.
-- `DeliveryFee()`: `0` se `HasFreeDelivery()`, altrimenti `StandardDeliveryFee`.
-- `GrandTotal()`: totale finale (`TotalAfterDiscount() + DeliveryFee()`).
+- `Subtotal()`: somma dei prezzi di tutte le pizze.
+- `HasFreeDelivery(PricingSettings settings)`: `true` se il subtotale supera `settings.FreeDeliveryThreshold`.
+- `DeliveryFee(PricingSettings settings)`: `0` se `HasFreeDelivery(settings)`, altrimenti `StandardDeliveryFee`.
+- `GrandTotal(PricingSettings settings)`: totale finale (`Subtotal() + DeliveryFee(settings)`).
+
+> **Nota**: nel codice demo attuale `Order` include anche `Discount()` e `TotalAfterDiscount()`, che delegano a
+> `DiscountPolicy`. Qui il diagramma **rimuove del tutto la logica di sconto**, per semplificare il modello —
+> vedi la nota nella sezione 4.7 per il perché. Inoltre `FreeDeliveryThreshold` non è più una costante interna
+> a `Order` (nel codice demo vale `25.00`), ma arriva dall'esterno tramite il parametro `settings`
+> (vedi [`PricingSettings`](#48-pricingsettings)), perché è pensata come configurabile dal proprietario della
+> pizzeria. `StandardDeliveryFee` invece resta una costante fissa: non è pensata come un valore che cambia
+> spesso a runtime.
 
 ### 4.3 `PizzaSize`
 
@@ -198,9 +217,35 @@ possibili (`Small`, `Medium`, `Large`) — non ha visibilità `+` perché i valo
 pubblici e non sono né campi né metodi in senso classico.
 
 > **Nota**: nel codice reale esiste anche `PizzaSizeExtensions.BasePrice()`, un *extension method* che calcola
-> il prezzo base per formato. Non è stato disegnato come classe a sé per non appesantire il diagramma con un
-> dettaglio di implementazione (l'extension method non è un concetto di dominio, ma un modo C#-specifico di
-> "aggiungere" un metodo a un enum dall'esterno).
+> il prezzo base per formato con valori hardcoded (`Small` = 5.00, `Medium` = 7.50, `Large` = 10.00). Qui il
+> diagramma lo tratta come un dato di menu configurabile dal proprietario della pizzeria, esattamente come i
+> topping — vedi la sezione seguente ([`IPizzaSizeRepository`](#43bis-ipizzasizerepository)). L'extension
+> method non è stato disegnato come classe a sé per non appesantire il diagramma con un dettaglio di
+> implementazione (non è un concetto di dominio, ma un modo C#-specifico di "aggiungere" un metodo a un enum
+> dall'esterno).
+
+### 4.3bis `IPizzaSizeRepository`
+
+```mermaid
+classDiagram
+	class IPizzaSizeRepository {
+		<<interface>>
+		+GetBasePriceAsync(PizzaSize size) Task~decimal~
+	}
+```
+
+È il confine (contratto) verso il **Data Access Component**, lo stesso ruolo che `IToppingRepository` ha per i
+topping: dato un `PizzaSize`, restituisce il prezzo base configurato per quel formato, letto da un database in
+modo asincrono (`Task<decimal>`). Come per gli altri repository, l'implementazione concreta non compare in
+questo diagramma perché appartiene a un altro componente.
+
+> **Perché non è `Pizza` a dipendere direttamente da `IPizzaSizeRepository`?** Per lo stesso motivo per cui
+> `Pizza`/`Order` non dipendono direttamente da `IPricingSettingsRepository` (vedi la nota nella sezione
+> [4.9](#49-ipricingsettingsrepository)): `Pizza` è un'entità di dominio e deve restare facile da istanziare e
+> testare, senza sapere da dove arrivano i dati. Il prezzo base viene quindi risolto **prima** di creare la
+> pizza (tipicamente dall'Order API, chiamando `GetBasePriceAsync(size)`) e passato al **costruttore** di
+> `Pizza` (`new Pizza(size, basePrice)`), che lo conserva in `_basePrice`. `CalculatePrice()` lo userà poi
+> senza bisogno di riceverlo di nuovo come parametro a ogni chiamata.
 
 ### 4.4 `Topping`
 
@@ -223,37 +268,102 @@ considerati uguali).
 ```mermaid
 classDiagram
 	class ToppingCatalog {
-		<<static>>
-		+All IReadOnlyCollection~Topping~
-		+Get(string name) Topping
+		-IToppingRepository _repository
+		+GetAllAsync() Task~IReadOnlyCollection~Topping~~
+		+GetAsync(string name) Task~Topping~
 	}
 ```
 
-Corrisponde a [`ToppingCatalog.cs`](../../PizzaShop.Domain/ToppingCatalog.cs): il catalogo di ingredienti
-disponibili. È `<<static>>` perché nel codice è `public static class ToppingCatalog` — non si crea mai
-un'istanza, si chiamano i suoi membri direttamente sul nome della classe (es. `ToppingCatalog.Get("Funghi")`).
+> **Nota**: questa versione è diversa da [`ToppingCatalog.cs`](../../PizzaShop.Domain/ToppingCatalog.cs), che
+> nel progetto demo è `public static class ToppingCatalog` con un dizionario hardcoded in memoria (nessun
+> database). Qui il diagramma mostra deliberatamente una versione più **realistica**: topping e prezzi letti
+> da un database tramite il [Data Access Component](03-component-diagram.md), non un catalogo statico fisso
+> nel codice. Vedi la sezione 4.6 per l'interfaccia `IToppingRepository` introdotta a questo scopo.
 
-- `All`: tutti gli ingredienti disponibili.
-- `Get(string name)`: cerca un ingrediente per nome (lancia eccezione se non esiste).
+È il catalogo di ingredienti disponibili, reso disponibile all'esterno tramite due operazioni:
 
-### 4.6 `DiscountPolicy`
+- `_repository`: dipendenza privata verso l'astrazione di persistenza (campo, non parametro di metodo — viene
+  iniettata una volta, tipicamente nel costruttore, e riusata a ogni chiamata).
+- `GetAllAsync()`: tutti gli ingredienti disponibili, letti dal database.
+- `GetAsync(string name)`: cerca un ingrediente per nome, letto dal database (lancia eccezione/ritorna
+  `null` se non esiste, a seconda della convenzione scelta).
+
+I metodi sono **asincroni** (`Task<...>`) perché leggere da un database è un'operazione di I/O: bloccare un
+thread in attesa di una risposta di rete/disco sarebbe uno spreco di risorse, specialmente in un'applicazione
+web con molte richieste concorrenti (coerente con `Order API` implementata come ASP.NET Core Web API nel
+[Component Diagram](03-component-diagram.md)).
+
+### 4.6 `IToppingRepository`
 
 ```mermaid
 classDiagram
-	class DiscountPolicy {
-		<<static>>
-		+const decimal DiscountThreshold = 30.00
-		+const decimal DiscountRate = 0.10
-		+CalculateDiscount(decimal subtotal) decimal
+	class IToppingRepository {
+		<<interface>>
+		+GetAllAsync() Task~IReadOnlyCollection~Topping~~
+		+GetByNameAsync(string name) Task~Topping~
 	}
 ```
 
-Corrisponde a [`DiscountPolicy.cs`](../../PizzaShop.Domain/DiscountPolicy.cs): la regola di sconto, anch'essa
-`<<static>>` per lo stesso motivo di `ToppingCatalog`.
+È il confine (contratto) tra l'**Order Management Component** e il **Data Access Component**: `ToppingCatalog`
+conosce solo questa interfaccia, non sa nulla di SQL, stringhe di connessione o ORM usati per implementarla.
+L'implementazione concreta (es. `SqlToppingRepository`) non compare in questo diagramma perché appartiene a un
+altro componente — esattamente come, nell'esempio ufficiale del C4 Model, `CoreBankingSystemConnection`
+incapsula i dettagli di rete senza esporli a chi la usa. Lo stereotipo `<<interface>>` segnala che si tratta di
+un contratto (`public interface IToppingRepository` in C#), non di una classe concreta istanziabile.
 
-- `DiscountThreshold = 30.00`: soglia di subtotale oltre la quale scatta lo sconto.
-- `DiscountRate = 0.10`: percentuale di sconto applicata (10%).
-- `CalculateDiscount(decimal subtotal)`: calcola l'importo dello sconto dato un subtotale.
+### 4.7 Perché non c'è più `DiscountPolicy`
+
+Nel codice demo attuale esiste una classe [`DiscountPolicy.cs`](../../PizzaShop.Domain/DiscountPolicy.cs), con
+una soglia (`DiscountThreshold = 30.00`) e una percentuale (`DiscountRate = 0.10`) fisse, usata da `Order` per
+calcolare `Discount()` e `TotalAfterDiscount()`. In questo diagramma la logica di sconto è stata **rimossa del
+tutto**, per semplificare il modello: niente classe `DiscountPolicy`, niente `Discount()`/`TotalAfterDiscount()`
+su `Order` (vedi [sezione 4.2](#42-order)). Il totale finale si calcola quindi direttamente da `Subtotal()` più
+l'eventuale costo di consegna.
+
+### 4.8 `PricingSettings`
+
+```mermaid
+classDiagram
+	class PricingSettings {
+		<<record>>
+		+int MaxToppingsPerPizza
+		+decimal FreeDeliveryThreshold
+	}
+```
+
+È un semplice contenitore dati (per questo è uno stereotipo `<<record>>`, come `Topping`): raggruppa le regole di
+business che il proprietario della pizzeria può modificare — il numero massimo di topping per pizza e la soglia
+di consegna gratuita. Non contiene logica, solo valori: chi la usa (`Pizza`, `Order`) la riceve già pronta come
+parametro, senza sapere da dove arriva.
+
+> **Nota**: nel codice demo attuale `FreeDeliveryThreshold = 25.00` è una costante dichiarata dentro `Order`.
+> Qui il diagramma la rende **configurabile dal proprietario della pizzeria** (quindi letta da un database),
+> esattamente come il limite di topping di `Pizza` — vedi la sezione 5.3 per il perché `Order` resta comunque
+> un'entità "pura" invece di dipendere direttamente da un repository.
+
+### 4.9 `IPricingSettingsRepository`
+
+```mermaid
+classDiagram
+	class IPricingSettingsRepository {
+		<<interface>>
+		+GetAsync() Task~PricingSettings~
+	}
+```
+
+È il confine (contratto) verso il **Data Access Component**, lo stesso ruolo che `IToppingRepository` ha per i
+topping: incapsula la lettura delle impostazioni da un database, restituendole come `PricingSettings` tramite
+un metodo asincrono (`Task<...>`), coerentemente col fatto che leggere da un DB è un'operazione di I/O.
+L'implementazione concreta non compare in questo diagramma, perché appartiene a un altro componente.
+
+> **Perché non è `Pizza`/`Order` a dipendere direttamente da `IPricingSettingsRepository`, come invece
+> fa `ToppingCatalog` con `IToppingRepository`?** `ToppingCatalog` è un piccolo servizio applicativo, mentre
+> `Pizza` e `Order` rappresentano entità di dominio: farle dipendere da un repository le
+> renderebbe più difficili da istanziare e testare, e mescolerebbe "cosa sono" con "da dove arrivano i dati".
+> Per questo qui si è scelto un livello di indirezione in più: qualcosa a monte (tipicamente l'Order API, non
+> mostrato in questo diagramma perché fuori scope dell'Order Management Component) chiama
+> `IPricingSettingsRepository.GetAsync()` una volta e passa il risultato (`PricingSettings`) a valle, come
+> semplice parametro.
 
 ---
 
@@ -267,7 +377,11 @@ classDiagram
 	Pizza "1" o-- "0..many" Topping : Toppings
 	Pizza --> PizzaSize : Size
 	Pizza ..> ToppingCatalog : usa
-	Order ..> DiscountPolicy : usa
+	ToppingCatalog --> IToppingRepository : usa
+	Pizza ..> PricingSettings : usa
+	Order ..> PricingSettings : usa
+	IPricingSettingsRepository ..> PricingSettings : restituisce
+	IPizzaSizeRepository ..> PizzaSize : usa
 ```
 
 Ci sono **tre tipi diversi** di relazione, ognuna con un significato UML preciso.
@@ -301,25 +415,49 @@ nel codice che realizza quella relazione.
 
 ```
 Pizza --> PizzaSize : Size
+ToppingCatalog --> IToppingRepository : usa
 ```
 
-La freccia continua **piena** (`-->`) indica che `Pizza` ha un riferimento diretto a `PizzaSize` tramite la
-proprietà `Size`. È una relazione più "debole" dell'aggregazione: non è una collezione, è un singolo valore che
-la classe usa come proprio attributo tipizzato.
+> `IPricingSettingsRepository ..> PricingSettings : restituisce` usa invece una dipendenza tratteggiata
+> (sezione 5.3), non un'associazione: l'interfaccia non "possiede" un `PricingSettings`, lo produce e lo
+> restituisce come valore di ritorno del metodo `GetAsync()`.
+
+La freccia continua **piena** (`-->`) indica che la classe di partenza ha un riferimento diretto a quella di
+arrivo, tenuto come campo/proprietà. È una relazione più "debole" dell'aggregazione: non è una collezione, è
+un singolo valore che la classe usa come proprio attributo tipizzato.
+
+- `Pizza --> PizzaSize : Size`: `Pizza` ha un riferimento diretto a `PizzaSize` tramite la proprietà `Size`.
+- `ToppingCatalog --> IToppingRepository : usa`: `ToppingCatalog` tiene un riferimento diretto
+  all'interfaccia `IToppingRepository` (il campo privato `_repository` visto nella sezione 4.5) — lo tiene
+  come dipendenza stabile per tutta la vita dell'oggetto, non lo crea/scarta a ogni chiamata come farebbe una
+  dipendenza (`..>`).
 
 ### 5.3 Dipendenza (`..>`) — "usa, senza possedere"
 
 ```
 Pizza ..> ToppingCatalog : usa
-Order ..> DiscountPolicy : usa
+Pizza ..> PricingSettings : usa
+Order ..> PricingSettings : usa
+IPizzaSizeRepository ..> PizzaSize : usa
 ```
 
-La freccia **tratteggiata** (`..>`) indica una **dipendenza**: `Pizza` e `Order` *chiamano* metodi di
-`ToppingCatalog` e `DiscountPolicy`, ma non li tengono come campo/proprietà — è un uso "di passaggio" (es.
-`ToppingCatalog.Get(...)` viene chiamato quando serve, non è salvato da nessuna parte dentro `Pizza`).
+La freccia **tratteggiata** (`..>`) indica una **dipendenza**: `Pizza` e `Order` *chiamano* metodi/usano dati di
+`ToppingCatalog` e `PricingSettings`, ma non li tengono come campo/proprietà — è un uso "di passaggio" (es.
+`ToppingCatalog.GetAsync(...)` viene chiamato quando serve, non è salvato da nessuna parte dentro `Pizza`).
 
-Questo è coerente col fatto che `ToppingCatalog` e `DiscountPolicy` sono classi `<<static>>`: non si "possiede"
-un'istanza di una classe statica, la si "usa" chiamandone i membri.
+Per `ToppingCatalog` il motivo è che, pur non essendo `<<static>>` in questa versione "realistica", `Pizza` la
+userebbe comunque solo per una singola chiamata puntuale, senza bisogno di tenerla come proprio stato interno.
+
+`Pizza ..> PricingSettings` e `Order ..> PricingSettings` seguono una logica analoga: entrambe ricevono
+un `PricingSettings` come **parametro di metodo** (`AddTopping(..., settings)`, `HasFreeDelivery(settings)`,
+`DeliveryFee(settings)`, `GrandTotal(settings)`), lo leggono e lo scartano — non lo tengono come campo. È
+esattamente questa scelta (dipendenza "di passaggio" invece di un'associazione stabile come
+`ToppingCatalog --> IToppingRepository`) che permette a `Pizza` e `Order` di restare entità di dominio pure,
+senza mai dipendere direttamente da un repository.
+
+`IPizzaSizeRepository ..> PizzaSize : usa` segue lo stesso principio delle relazioni "di ritorno" viste sopra
+per `IPricingSettingsRepository`: l'interfaccia usa `PizzaSize` come chiave di ricerca del proprio metodo
+(`GetBasePriceAsync(PizzaSize size)`), senza possederlo come campo.
 
 ### 5.4 Riepilogo differenze linea/freccia
 
@@ -340,25 +478,22 @@ title: "Code View: PizzaShop — Backend — Order Management Component"
 classDiagram
 	namespace PizzaShopDomain["PizzaShop.Domain"] {
 		class Pizza {
-			+const int MaxToppings = 5
+			-decimal _basePrice
 			+PizzaSize Size
 			+IReadOnlyList~Topping~ Toppings
-			+AddTopping(Topping topping) void
+			+AddTopping(Topping topping, PricingSettings settings) void
 			+CalculatePrice() decimal
 		}
 
 		class Order {
-			+const decimal FreeDeliveryThreshold = 25.00
 			+const decimal StandardDeliveryFee = 3.50
 			+string CustomerName
 			+IReadOnlyList~Pizza~ Pizzas
 			+AddPizza(Pizza pizza) void
 			+Subtotal() decimal
-			+Discount() decimal
-			+TotalAfterDiscount() decimal
-			+HasFreeDelivery() bool
-			+DeliveryFee() decimal
-			+GrandTotal() decimal
+			+HasFreeDelivery(PricingSettings settings) bool
+			+DeliveryFee(PricingSettings settings) decimal
+			+GrandTotal(PricingSettings settings) decimal
 		}
 
 		class PizzaSize {
@@ -368,6 +503,11 @@ classDiagram
 			Large
 		}
 
+		class IPizzaSizeRepository {
+			<<interface>>
+			+GetBasePriceAsync(PizzaSize size) Task~decimal~
+		}
+
 		class Topping {
 			<<record>>
 			+string Name
@@ -375,16 +515,26 @@ classDiagram
 		}
 
 		class ToppingCatalog {
-			<<static>>
-			+All IReadOnlyCollection~Topping~
-			+Get(string name) Topping
+			-IToppingRepository _repository
+			+GetAllAsync() Task~IReadOnlyCollection~Topping~~
+			+GetAsync(string name) Task~Topping~
 		}
 
-		class DiscountPolicy {
-			<<static>>
-			+const decimal DiscountThreshold = 30.00
-			+const decimal DiscountRate = 0.10
-			+CalculateDiscount(decimal subtotal) decimal
+		class IToppingRepository {
+			<<interface>>
+			+GetAllAsync() Task~IReadOnlyCollection~Topping~~
+			+GetByNameAsync(string name) Task~Topping~
+		}
+
+		class PricingSettings {
+			<<record>>
+			+int MaxToppingsPerPizza
+			+decimal FreeDeliveryThreshold
+		}
+
+		class IPricingSettingsRepository {
+			<<interface>>
+			+GetAsync() Task~PricingSettings~
 		}
 	}
 
@@ -392,7 +542,11 @@ classDiagram
 	Pizza "1" o-- "0..many" Topping : Toppings
 	Pizza --> PizzaSize : Size
 	Pizza ..> ToppingCatalog : usa
-	Order ..> DiscountPolicy : usa
+	ToppingCatalog --> IToppingRepository : usa
+	Pizza ..> PricingSettings : usa
+	Order ..> PricingSettings : usa
+	IPricingSettingsRepository ..> PricingSettings : restituisce
+	IPizzaSizeRepository ..> PizzaSize : usa
 ```
 
 *Come già anticipato nella [sezione 2](#2-il-box-del-componente-namespace), il riquadro `PizzaShop.Domain` e il
@@ -405,9 +559,23 @@ nell'immagine renderizzata, che questo è il code-view di un singolo componente 
 1. Un `Order` **aggrega** più `Pizza` (relazione 1→molti).
 2. Ogni `Pizza` **aggrega** da 0 a molti `Topping` (relazione 1→0..molti) e **ha un** `PizzaSize`.
 3. `Pizza` **dipende da** `ToppingCatalog` per recuperare gli ingredienti disponibili (ma non lo possiede).
-4. `Order` **dipende da** `DiscountPolicy` per calcolare lo sconto (ma non lo possiede).
-5. `Topping` è un record immutabile, `ToppingCatalog` e `DiscountPolicy` sono classi statiche, `PizzaSize` è un
-   enum — tre "nature" diverse di classe, segnalate dagli stereotipi.
+4. `ToppingCatalog` **ha un riferimento a** `IToppingRepository` per leggere topping e prezzi da un database,
+   senza conoscerne i dettagli implementativi (delegati al Data Access Component). Allo stesso modo,
+   `IPizzaSizeRepository` **usa** `PizzaSize` per recuperare da un database il prezzo base associato a quel
+   formato, senza che `Pizza` dipenda direttamente da questo repository (vedi punto 5).
+5. `Pizza` e `Order` **dipendono da** `PricingSettings` (limite topping e soglia di consegna gratuita
+   configurabili dal proprietario), ricevuto come parametro invece che tramite un repository iniettato:
+   restano così entità di dominio pure, mentre è `IPricingSettingsRepository` a occuparsi di produrre
+   quel valore leggendolo da un database. Il prezzo base per formato segue una logica simile ma non identica:
+   risolto tramite `IPizzaSizeRepository` **prima** di creare la pizza e passato al **costruttore**
+   (`new Pizza(size, basePrice)`), che lo conserva in `_basePrice` — per questo `CalculatePrice()` non ha
+   bisogno di riceverlo a ogni chiamata come fanno invece `AddTopping(..., settings)` o `GrandTotal(settings)`
+   con `PricingSettings`.
+6. `Topping` e `PricingSettings` sono record immutabili, `IToppingRepository`/`IPricingSettingsRepository`/
+   `IPizzaSizeRepository` sono interfacce, `PizzaSize` è un enum — diverse "nature" di classe, segnalate dagli
+   stereotipi.
+7. Non compare più alcuna logica di sconto: `Order` calcola il totale finale direttamente da `Subtotal()` e
+   dall'eventuale costo di consegna (`DeliveryFee(settings)`), senza passare da una classe `DiscountPolicy`.
 
 Per vedere **quando** questi metodi vengono effettivamente chiamati, e in che ordine, consulta il
 [sequence diagram](05-sequence-diagram.md), che descrive il flusso del caso d'uso "composizione di un ordine e

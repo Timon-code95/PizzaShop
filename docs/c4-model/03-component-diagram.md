@@ -9,7 +9,7 @@ container **Backend** viene "aperto" nei suoi componenti.
 
 A differenza di una prima bozza di questo documento, i componenti **non** ricalcano le singole classi C# — quel
 livello di dettaglio appartiene al [Livello 4 — Code](04-code-level-note.md), che mostra già il class diagram di
-`Order`, `Pizza`, `ToppingCatalog` e `DiscountPolicy`. Qui, coerentemente con la definizione di "componente" del C4
+`Order`, `Pizza` e `ToppingCatalog`. Qui, coerentemente con la definizione di "componente" del C4
 Model (un raggruppamento di funzionalità correlate dietro un'interfaccia, tipicamente corrispondente a un
 namespace o assembly), il Backend viene scomposto in **5 componenti**:
 
@@ -18,10 +18,11 @@ namespace o assembly), il Backend viene scomposto in **5 componenti**:
   logica di sicurezza propria oltre alla delega, non ha senso separarlo in "Security Component" + "Identity
   Provider Adapter": è un unico componente che incapsula quella responsabilità).
 - **Order Management Component**: tutta la logica di business già implementata (composizione pizze, topping,
-  sconti, consegna) — corrisponde 1:1 alla libreria `PizzaShop.Domain`.
+  consegna) — corrisponde 1:1 alla libreria `PizzaShop.Domain`.
 - **Data Access Component**: isola la logica di business dai dettagli di persistenza (query, connessioni al
-  database). È il motivo per cui il [class diagram](04-code-level-note.md) di `PizzaShop.Domain` non contiene
-  codice di accesso ai dati: quella responsabilità non appartiene all'Order Management Component, ma a un
+  database). È il motivo per cui il [class diagram](04-code-level-note.md) di `PizzaShop.Domain` mostra solo
+  interfacce verso la persistenza (`IToppingRepository`, `IPricingSettingsRepository`, `IPizzaSizeRepository`),
+  non le implementazioni concrete: quel dettaglio non appartiene all'Order Management Component, ma a un
   componente distinto (ancora da realizzare).
 - **Payment/Notification Adapter**: due adapter distinti verso i rispettivi sistemi esterni (pattern usato anche
   nell'esempio ufficiale per isolare la logica di business dai dettagli di integrazione).
@@ -33,13 +34,13 @@ C4Component
 	UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 
 	System_Boundary(pizzaShop, "PizzaShop") {
-		ContainerDb(database, "Database", "SQL Server", "Persiste ordini, catalogo topping e regole di sconto")
+		ContainerDb(database, "Database", "SQL Server", "Persiste ordini, catalogo topping e regole di prezzo")
 		Container(testBdd, "BDD Tests", "Reqnroll + xUnit", "Verifica le regole di business tramite scenari Gherkin eseguibili")
 		Container(ui, "UI", "Angular", "Interfaccia da cui il cliente compone l'ordine")
 
 		Container_Boundary(backend, "Backend") {
 			Component(dataAccess, "Data Access Component", "C#", "Incapsula l'accesso al database, isolando l'Order Management Component dai dettagli di persistenza")
-			Component(orderManagement, "Order Management Component", "C# (PizzaShop.Domain)", "Compone pizze e topping, calcola subtotale, sconto, consegna e totale finale")
+			Component(orderManagement, "Order Management Component", "C# (PizzaShop.Domain)", "Compone pizze e topping, calcola subtotale, consegna e totale finale")
 			Component(orderApi, "Order API", "ASP.NET Core Web API", "Endpoint che riceve le richieste di composizione ordine dalla UI")
 			Component(paymentAdapter, "Payment Gateway Adapter", "C#", "Un layer sottile attorno alle API esposte dal gateway di pagamento")
 			Component(notificationAdapter, "Notification Adapter", "C#", "Un layer sottile attorno alle API esposte dal servizio di notifiche")
@@ -109,7 +110,7 @@ C4Component
 ## Corrispondenza con il codice
 | Componente nel diagramma | Stato nella solution attuale |
 |---|---|
-| Order Management Component | Implementato: libreria `PizzaShop.Domain` (`Order.cs`, `Pizza.cs`, `ToppingCatalog.cs`, `DiscountPolicy.cs`) |
+| Order Management Component | Implementato: libreria `PizzaShop.Domain` (`Order.cs`, `Pizza.cs`, `ToppingCatalog.cs`) |
 | Order API | Non ancora implementato |
 | Security Component | Non ancora implementato |
 | Payment Gateway Adapter | Non ancora implementato |
@@ -117,7 +118,7 @@ C4Component
 | Data Access Component | Non ancora implementato |
 
 Le classi reali che compongono l'**Order Management Component** (`Order`, `Pizza`, `ToppingCatalog`,
-`DiscountPolicy`, con i relativi campi e metodi) sono mostrate nel dettaglio nel
+con i relativi campi e metodi) sono mostrate nel dettaglio nel
 [Livello 4 — Code](04-code-level-note.md), il livello di zoom corretto per scendere fino alle singole classi.
 Le stesse regole di business sono quelle verificate dagli scenari Gherkin descritti in
 [docs/gherkin-cucumber](../gherkin-cucumber/README.md).

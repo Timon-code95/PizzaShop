@@ -11,7 +11,7 @@ nei diagrammi chiamiamo **Sistema Ordini** per distinguerlo dal nome dell'applic
 
 > **Composizione di un ordine e calcolo del totale** — il cliente compone un ordine con una o più pizze,
 > personalizzate con ingredienti extra entro un limite massimo, e ne viene calcolato il totale finale (subtotale,
-> sconto sopra una certa soglia, spese di consegna incluse).
+> spese di consegna incluse, con consegna gratuita sopra una certa soglia).
 
 Per questo motivo i 4 livelli qui sotto contengono **un solo diagramma Context, un solo Container e un solo
 Component**, tutti focalizzati su questo caso d'uso — non su tutte le funzionalità immaginabili del sistema (es.
