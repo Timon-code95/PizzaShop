@@ -10,6 +10,9 @@ consegna incluse)"* — lo stesso caso d'uso rappresentato nei diagrammi [Contex
 [Container](02-container-diagram.md) e [Component](03-component-diagram.md).
 
 ```mermaid
+---
+title: "Sequence Diagram: composizione di un ordine e calcolo del totale"
+---
 sequenceDiagram
 	actor Cliente
 	participant OrderCompositionService
@@ -50,6 +53,13 @@ sequenceDiagram
 
 	OrderCompositionService-->>Cliente: OrderTotals
 ```
+
+> Il titolo `Sequence Diagram: composizione di un ordine e calcolo del totale` è definito nel frontmatter
+> `title:` del blocco Mermaid (non solo nel testo Markdown sopra): Mermaid lo disegna *dentro* l'immagine
+> renderizzata, sopra il diagramma stesso, esattamente come già fatto per il [class diagram](04-code-level-note.md).
+> Questo rende esplicito il caso d'uso rappresentato anche se il diagramma viene esportato o incollato altrove
+> come immagine isolata — è la stessa esigenza, ma qui ancora più sentita: un sequence diagram descrive *un solo*
+> scenario specifico, quindi sapere a colpo d'occhio quale caso d'uso stiamo guardando è particolarmente utile.
 
 ## Note di lettura
 - `actor` / `participant`: gli attori/oggetti coinvolti nello scambio di messaggi. Qui `Cliente` è la persona che
