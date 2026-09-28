@@ -8,20 +8,30 @@ namespace PizzaShop.Bdd.Tests.Steps;
 /// Step definitions for ScontoEConsegna.feature.
 /// </summary>
 [Binding]
-public class OrderSteps(PizzaOrderContext context)
+public class OrderSteps(
+    PizzaOrderContext context,
+    IPizzaSizeRepository pizzaSizeRepository,
+    ToppingCatalog toppingCatalog,
+    IPricingSettingsRepository pricingSettingsRepository)
 {
     [Given(@"che il cliente ""(.*)"" ha ordinato le seguenti pizze")]
-    public void DatoCheIlClienteHaOrdinatoLeSeguentiPizze(string cliente, Table tabellaPizze)
+    public async Task DatoCheIlClienteHaOrdinatoLeSeguentiPizze(string cliente, Table tabellaPizze)
     {
+        var settings = await pricingSettingsRepository.GetAsync();
+        context.Settings = settings;
+
         var order = new Order(cliente);
 
         foreach (var row in tabellaPizze.Rows)
         {
-            var pizza = new Pizza(Enum.Parse<PizzaSize>(row["Formato"], ignoreCase: true));
+            var size = Enum.Parse<PizzaSize>(row["Formato"], ignoreCase: true);
+            var basePrice = await pizzaSizeRepository.GetBasePriceAsync(size);
+            var pizza = new Pizza(size, basePrice);
 
             foreach (var nome in CommonPizzaSteps.SplitIngredienti(row["Ingredienti"]))
             {
-                pizza.AddTopping(ToppingCatalog.Get(nome));
+                var topping = await toppingCatalog.GetAsync(nome);
+                pizza.AddTopping(topping, settings);
             }
 
             order.AddPizza(pizza);
@@ -40,17 +50,13 @@ public class OrderSteps(PizzaOrderContext context)
     public void AlloraIlSubtotaleDovrebbeEssere(string valoreAtteso) =>
         Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.Subtotal());
 
-    [Then(@"lo sconto applicato dovrebbe essere ""(.*)"" euro")]
-    public void AlloraLoScontoApplicatoDovrebbeEssere(string valoreAtteso) =>
-        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.Discount());
-
     [Then(@"la spesa di consegna dovrebbe essere ""(.*)"" euro")]
     public void AlloraLaSpesaDiConsegnaDovrebbeEssere(string valoreAtteso) =>
-        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.DeliveryFee());
+        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.DeliveryFee(context.Settings!));
 
     [Then(@"il totale finale dovrebbe essere ""(.*)"" euro")]
     public void AlloraIlTotaleFinaleDovrebbeEssere(string valoreAtteso) =>
-        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.GrandTotal());
+        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.GrandTotal(context.Settings!));
 
     private static decimal Parse(string value) => decimal.Parse(value, CultureInfo.InvariantCulture);
 }

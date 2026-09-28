@@ -1,15 +1,10 @@
 namespace PizzaShop.Domain;
 
 /// <summary>
-/// A customer order made of one or more pizzas. Computes subtotal, discount, delivery fee and grand total.
+/// A customer order made of one or more pizzas. Computes subtotal, delivery fee and grand total.
 /// </summary>
 public sealed class Order(string customerName)
 {
-    /// <summary>
-    /// Minimum total (after discount) to qualify for free delivery.
-    /// </summary>
-    public const decimal FreeDeliveryThreshold = 25.00m;
-
     /// <summary>
     /// Delivery fee charged when the order does not qualify for free delivery.
     /// </summary>
@@ -24,32 +19,22 @@ public sealed class Order(string customerName)
     public void AddPizza(Pizza pizza) => _pizzas.Add(pizza);
 
     /// <summary>
-    /// Sum of the price of every pizza in the order, before any discount.
+    /// Sum of the price of every pizza in the order.
     /// </summary>
     public decimal Subtotal() => _pizzas.Sum(p => p.CalculatePrice());
 
     /// <summary>
-    /// Discount amount applied to this order, according to <see cref="DiscountPolicy"/>.
+    /// True when the order qualifies for free delivery, according to <paramref name="settings"/>.
     /// </summary>
-    public decimal Discount() => DiscountPolicy.CalculateDiscount(Subtotal());
-
-    /// <summary>
-    /// Order total after discount, before delivery fee.
-    /// </summary>
-    public decimal TotalAfterDiscount() => Subtotal() - Discount();
-
-    /// <summary>
-    /// True when the order qualifies for free delivery.
-    /// </summary>
-    public bool HasFreeDelivery() => TotalAfterDiscount() >= FreeDeliveryThreshold;
+    public bool HasFreeDelivery(PricingSettings settings) => Subtotal() >= settings.FreeDeliveryThreshold;
 
     /// <summary>
     /// Delivery fee for this order: zero if it qualifies for free delivery, <see cref="StandardDeliveryFee"/> otherwise.
     /// </summary>
-    public decimal DeliveryFee() => HasFreeDelivery() ? 0m : StandardDeliveryFee;
+    public decimal DeliveryFee(PricingSettings settings) => HasFreeDelivery(settings) ? 0m : StandardDeliveryFee;
 
     /// <summary>
-    /// Grand total: total after discount plus delivery fee.
+    /// Grand total: subtotal plus delivery fee.
     /// </summary>
-    public decimal GrandTotal() => TotalAfterDiscount() + DeliveryFee();
+    public decimal GrandTotal(PricingSettings settings) => Subtotal() + DeliveryFee(settings);
 }

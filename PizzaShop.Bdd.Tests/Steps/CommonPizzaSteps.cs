@@ -9,20 +9,29 @@ namespace PizzaShop.Bdd.Tests.Steps;
 /// which would otherwise cause Reqnroll to report an "ambiguous step" error.
 /// </summary>
 [Binding]
-public class CommonPizzaSteps(PizzaOrderContext context)
+public class CommonPizzaSteps(
+    PizzaOrderContext context,
+    IPizzaSizeRepository pizzaSizeRepository,
+    ToppingCatalog toppingCatalog,
+    IPricingSettingsRepository pricingSettingsRepository)
 {
     [Given(@"che ordino una pizza di formato ""(.*)""")]
-    public void DatoCheOrdinoUnaPizzaDiFormato(string formato)
+    public async Task DatoCheOrdinoUnaPizzaDiFormato(string formato)
     {
-        context.CurrentPizza = new Pizza(Enum.Parse<PizzaSize>(formato, ignoreCase: true));
+        var size = Enum.Parse<PizzaSize>(formato, ignoreCase: true);
+        var basePrice = await pizzaSizeRepository.GetBasePriceAsync(size);
+        context.CurrentPizza = new Pizza(size, basePrice);
     }
 
     [When(@"aggiungo i seguenti ingredienti extra ""(.*)""")]
-    public void QuandoAggiungoISeguentiIngredientiExtra(string ingredienti)
+    public async Task QuandoAggiungoISeguentiIngredientiExtra(string ingredienti)
     {
+        var settings = await pricingSettingsRepository.GetAsync();
+
         foreach (var nome in SplitIngredienti(ingredienti))
         {
-            context.CurrentPizza!.AddTopping(ToppingCatalog.Get(nome));
+            var topping = await toppingCatalog.GetAsync(nome);
+            context.CurrentPizza!.AddTopping(topping, settings);
         }
     }
 

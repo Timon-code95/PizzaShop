@@ -7,27 +7,39 @@ namespace PizzaShop.Bdd.Tests.Steps;
 /// Step definitions for LimiteIngredienti.feature.
 /// </summary>
 [Binding]
-public class ToppingLimitSteps(PizzaOrderContext context)
+public class ToppingLimitSteps(
+    PizzaOrderContext context,
+    ToppingCatalog toppingCatalog,
+    IPricingSettingsRepository pricingSettingsRepository)
 {
     [Given(@"che la pizza ha già 5 ingredienti extra")]
-    public void DatoCheLaPizzaHaGiaCinqueIngredientiExtra()
+    public async Task DatoCheLaPizzaHaGiaCinqueIngredientiExtra()
     {
-        foreach (var topping in ToppingCatalog.All.Take(Pizza.MaxToppings))
+        var settings = await pricingSettingsRepository.GetAsync();
+        var toppings = await toppingCatalog.GetAllAsync();
+
+        foreach (var topping in toppings.Take(settings.MaxToppingsPerPizza))
         {
-            context.CurrentPizza!.AddTopping(topping);
+            context.CurrentPizza!.AddTopping(topping, settings);
         }
     }
 
     [When(@"provo ad aggiungere un ulteriore ingrediente extra ""(.*)""")]
-    public void QuandoProvoAdAggiungereUnUlterioreIngredienteExtra(string nomeIngrediente)
+    public async Task QuandoProvoAdAggiungereUnUlterioreIngredienteExtra(string nomeIngrediente)
     {
-        context.LastError = Record.Exception(() => context.CurrentPizza!.AddTopping(ToppingCatalog.Get(nomeIngrediente)));
+        var settings = await pricingSettingsRepository.GetAsync();
+        context.LastError = await Record.ExceptionAsync(async () =>
+        {
+            var topping = await toppingCatalog.GetAsync(nomeIngrediente);
+            context.CurrentPizza!.AddTopping(topping, settings);
+        });
     }
 
     [Then(@"l'aggiunta degli ingredienti extra dovrebbe andare a buon fine")]
-    public void AlloraLAggiuntaDegliIngredientiExtraDovrebbeAndareABuonFine()
+    public async Task AlloraLAggiuntaDegliIngredientiExtraDovrebbeAndareABuonFine()
     {
-        Assert.Equal(Pizza.MaxToppings, context.CurrentPizza!.Toppings.Count);
+        var settings = await pricingSettingsRepository.GetAsync();
+        Assert.Equal(settings.MaxToppingsPerPizza, context.CurrentPizza!.Toppings.Count);
     }
 
     [Then(@"dovrebbe essere sollevato un errore che segnala il superamento del limite di ingredienti extra")]

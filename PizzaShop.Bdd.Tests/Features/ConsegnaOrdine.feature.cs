@@ -17,23 +17,23 @@ namespace PizzaShop.Bdd.Tests.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class ScontoSullordineESpeseDiConsegnaFeature : object, global::Xunit.IClassFixture<ScontoSullordineESpeseDiConsegnaFeature.FixtureData>, global::Xunit.IAsyncLifetime
+    public partial class SpeseDiConsegnaDellordineFeature : object, global::Xunit.IClassFixture<SpeseDiConsegnaDellordineFeature.FixtureData>, global::Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Sconto sull\'ordine e spese di consegna", "  Come cliente della pizzeria\r\n  Voglio ricevere uno sconto sugli ordini più cons" +
-                "istenti e la consegna gratuita oltre una certa soglia\r\n  Così da essere premiato" +
-                " quando ordino di più", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Spese di consegna dell\'ordine", "  Come cliente della pizzeria\r\n  Voglio ricevere la consegna gratuita quando il m" +
+                "io ordine supera una certa soglia\r\n  Così da essere premiato quando ordino di pi" +
+                "ù", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
         private global::Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
-#line 1 "ScontoEConsegna.feature"
+#line 1 "ConsegnaOrdine.feature"
 #line hidden
         
-        public ScontoSullordineESpeseDiConsegnaFeature(ScontoSullordineESpeseDiConsegnaFeature.FixtureData fixtureData, global::Xunit.Abstractions.ITestOutputHelper testOutputHelper)
+        public SpeseDiConsegnaDellordineFeature(SpeseDiConsegnaDellordineFeature.FixtureData fixtureData, global::Xunit.Abstractions.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -107,7 +107,7 @@ namespace PizzaShop.Bdd.Tests.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ScontoEConsegna.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ConsegnaOrdine.feature.ndjson", 5);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -135,15 +135,15 @@ namespace PizzaShop.Bdd.Tests.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Ordine piccolo, nessuno sconto e consegna a pagamento")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Sconto sull\'ordine e spese di consegna")]
-        [global::Xunit.TraitAttribute("Description", "Ordine piccolo, nessuno sconto e consegna a pagamento")]
-        public async global::System.Threading.Tasks.Task OrdinePiccoloNessunoScontoEConsegnaAPagamento()
+        [global::Xunit.SkippableFactAttribute(DisplayName="Ordine piccolo, consegna a pagamento")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Spese di consegna dell\'ordine")]
+        [global::Xunit.TraitAttribute("Description", "Ordine piccolo, consegna a pagamento")]
+        public async global::System.Threading.Tasks.Task OrdinePiccoloConsegnaAPagamento()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine piccolo, nessuno sconto e consegna a pagamento", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine piccolo, consegna a pagamento", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 6
@@ -172,30 +172,27 @@ namespace PizzaShop.Bdd.Tests.Features
  await testRunner.ThenAsync("il subtotale dovrebbe essere \"5.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 12
- await testRunner.AndAsync("lo sconto applicato dovrebbe essere \"0.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 13
  await testRunner.AndAsync("la spesa di consegna dovrebbe essere \"3.50\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 14
+#line 13
  await testRunner.AndAsync("il totale finale dovrebbe essere \"8.50\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Ordine medio, nessuno sconto ma consegna gratuita")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Sconto sull\'ordine e spese di consegna")]
-        [global::Xunit.TraitAttribute("Description", "Ordine medio, nessuno sconto ma consegna gratuita")]
-        public async global::System.Threading.Tasks.Task OrdineMedioNessunoScontoMaConsegnaGratuita()
+        [global::Xunit.SkippableFactAttribute(DisplayName="Ordine medio, consegna gratuita")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Spese di consegna dell\'ordine")]
+        [global::Xunit.TraitAttribute("Description", "Ordine medio, consegna gratuita")]
+        public async global::System.Threading.Tasks.Task OrdineMedioConsegnaGratuita()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine medio, nessuno sconto ma consegna gratuita", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine medio, consegna gratuita", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 16
+#line 15
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -214,40 +211,37 @@ namespace PizzaShop.Bdd.Tests.Features
                 table2.AddRow(new string[] {
                             "Large",
                             "Prosciutto,Olive"});
-#line 17
+#line 16
  await testRunner.GivenAsync("che il cliente \"Luca\" ha ordinato le seguenti pizze", ((string)(null)), table2, "Given ");
 #line hidden
-#line 21
+#line 20
  await testRunner.WhenAsync("calcolo il totale dell\'ordine", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 22
+#line 21
  await testRunner.ThenAsync("il subtotale dovrebbe essere \"25.80\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 23
- await testRunner.AndAsync("lo sconto applicato dovrebbe essere \"0.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 24
+#line 22
  await testRunner.AndAsync("la spesa di consegna dovrebbe essere \"0.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 25
+#line 23
  await testRunner.AndAsync("il totale finale dovrebbe essere \"25.80\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Ordine grande, con sconto e consegna gratuita")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Sconto sull\'ordine e spese di consegna")]
-        [global::Xunit.TraitAttribute("Description", "Ordine grande, con sconto e consegna gratuita")]
-        public async global::System.Threading.Tasks.Task OrdineGrandeConScontoEConsegnaGratuita()
+        [global::Xunit.SkippableFactAttribute(DisplayName="Ordine grande, consegna gratuita")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Spese di consegna dell\'ordine")]
+        [global::Xunit.TraitAttribute("Description", "Ordine grande, consegna gratuita")]
+        public async global::System.Threading.Tasks.Task OrdineGrandeConsegnaGratuita()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine grande, con sconto e consegna gratuita", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine grande, consegna gratuita", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 27
+#line 25
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -266,23 +260,20 @@ namespace PizzaShop.Bdd.Tests.Features
                 table3.AddRow(new string[] {
                             "Large",
                             "Mozzarella,Funghi,Pepperoni,Prosciutto,Olive"});
-#line 28
+#line 26
  await testRunner.GivenAsync("che il cliente \"Giulia\" ha ordinato le seguenti pizze", ((string)(null)), table3, "Given ");
 #line hidden
-#line 32
+#line 30
  await testRunner.WhenAsync("calcolo il totale dell\'ordine", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 33
+#line 31
  await testRunner.ThenAsync("il subtotale dovrebbe essere \"31.60\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 34
- await testRunner.AndAsync("lo sconto applicato dovrebbe essere \"3.16\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 35
+#line 32
  await testRunner.AndAsync("la spesa di consegna dovrebbe essere \"0.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 36
- await testRunner.AndAsync("il totale finale dovrebbe essere \"28.44\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 33
+ await testRunner.AndAsync("il totale finale dovrebbe essere \"31.60\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -295,12 +286,12 @@ namespace PizzaShop.Bdd.Tests.Features
             
             async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await ScontoSullordineESpeseDiConsegnaFeature.FeatureSetupAsync();
+                await SpeseDiConsegnaDellordineFeature.FeatureSetupAsync();
             }
             
             async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.DisposeAsync()
             {
-                await ScontoSullordineESpeseDiConsegnaFeature.FeatureTearDownAsync();
+                await SpeseDiConsegnaDellordineFeature.FeatureTearDownAsync();
             }
         }
     }

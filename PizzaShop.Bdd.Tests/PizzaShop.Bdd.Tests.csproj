@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PizzaShop.Domain\PizzaShop.Domain.csproj" />
+    <ProjectReference Include="..\PizzaShop.Infrastructure.InMemory\PizzaShop.Infrastructure.InMemory.csproj" />
   </ItemGroup>
 
 </Project>

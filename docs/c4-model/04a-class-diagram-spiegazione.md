@@ -149,16 +149,14 @@ Corrisponde a [`Pizza.cs`](../../PizzaShop.Domain/Pizza.cs). Rappresenta una sin
   codice e nel sequence diagram).
 - `CalculatePrice()`: calcola il prezzo totale della pizza (`_basePrice` + ingredienti).
 
-> **Nota**: nel codice demo attuale il limite di ingredienti extra è la costante `MaxToppings = 5` dichiarata
-> dentro `Pizza` stessa. Qui il diagramma mostra una versione **realistica** in cui quel limite è configurabile
-> dal proprietario della pizzeria (quindi letto da un database): non è più una costante interna a `Pizza`, ma
-> arriva dall'esterno tramite il parametro `settings` (vedi [`PricingSettings`](#48-pricingsettings)).
-> `Pizza` resta comunque un'entità "pura": non sa nulla di database o repository, riceve solo il valore già
+> **Nota**: il limite di ingredienti extra non è più una costante interna a `Pizza` (in passato era
+> `MaxToppings = 5`): è configurabile dal proprietario della pizzeria (letto da un database) e arriva
+> dall'esterno tramite il parametro `settings` (vedi [`PricingSettings`](#48-pricingsettings)). `Pizza`
+> resta comunque un'entità "pura": non sa nulla di database o repository, riceve solo il valore già
 > pronto — vedi la sezione 5.3 per il perché di questa scelta.
 >
-> Lo stesso vale per il prezzo base: nel codice demo attuale `CalculatePrice()` non prende parametri e calcola
-> `Size.BasePrice() + _toppings.Sum(...)`, dove `BasePrice()` è un metodo di estensione con valori hardcoded.
-> Qui invece il prezzo base viene risolto da chi crea l'ordine (tramite
+> Lo stesso vale per il prezzo base: `CalculatePrice()` non prende parametri, ma il prezzo base non è più
+> calcolato da un metodo hardcoded. Il prezzo base viene risolto da chi crea l'ordine (tramite
 > [`IPizzaSizeRepository`](#43bis-ipizzasizerepository)) e passato al **costruttore** di `Pizza`
 > (`new Pizza(size, basePrice)`), che lo salva in `_basePrice`. Per questo `CalculatePrice()` non ha bisogno di
 > alcun parametro: il valore è già disponibile internamente, esattamente come avviene per i `Topping` già
@@ -192,10 +190,9 @@ pizze:
 - `DeliveryFee(PricingSettings settings)`: `0` se `HasFreeDelivery(settings)`, altrimenti `StandardDeliveryFee`.
 - `GrandTotal(PricingSettings settings)`: totale finale (`Subtotal() + DeliveryFee(settings)`).
 
-> **Nota**: nel codice demo attuale `Order` include anche `Discount()` e `TotalAfterDiscount()`, che delegano a
-> `DiscountPolicy`. Qui il diagramma **rimuove del tutto la logica di sconto**, per semplificare il modello —
-> vedi la nota nella sezione 4.7 per il perché. Inoltre `FreeDeliveryThreshold` non è più una costante interna
-> a `Order` (nel codice demo vale `25.00`), ma arriva dall'esterno tramite il parametro `settings`
+> **Nota**: la logica di sconto è stata **rimossa del tutto** dal codice per semplificare il modello — vedi la
+> nota nella sezione 4.7 per il perché. Inoltre `FreeDeliveryThreshold` non è più una costante interna
+> a `Order`, ma arriva dall'esterno tramite il parametro `settings`
 > (vedi [`PricingSettings`](#48-pricingsettings)), perché è pensata come configurabile dal proprietario della
 > pizzeria. `StandardDeliveryFee` invece resta una costante fissa: non è pensata come un valore che cambia
 > spesso a runtime.
@@ -216,13 +213,10 @@ Corrisponde all'enum in [`PizzaSize.cs`](../../PizzaShop.Domain/PizzaSize.cs). �
 possibili (`Small`, `Medium`, `Large`) — non ha visibilità `+` perché i valori di un `enum` sono per natura
 pubblici e non sono né campi né metodi in senso classico.
 
-> **Nota**: nel codice reale esiste anche `PizzaSizeExtensions.BasePrice()`, un *extension method* che calcola
-> il prezzo base per formato con valori hardcoded (`Small` = 5.00, `Medium` = 7.50, `Large` = 10.00). Qui il
+> **Nota**: il prezzo base per formato non è più calcolato da un metodo con valori hardcoded (`Small` = 5.00,
+> `Medium` = 7.50, `Large` = 10.00 restano gli stessi valori, ma ora vengono letti tramite un repository). Il
 > diagramma lo tratta come un dato di menu configurabile dal proprietario della pizzeria, esattamente come i
-> topping — vedi la sezione seguente ([`IPizzaSizeRepository`](#43bis-ipizzasizerepository)). L'extension
-> method non è stato disegnato come classe a sé per non appesantire il diagramma con un dettaglio di
-> implementazione (non è un concetto di dominio, ma un modo C#-specifico di "aggiungere" un metodo a un enum
-> dall'esterno).
+> topping — vedi la sezione seguente ([`IPizzaSizeRepository`](#43bis-ipizzasizerepository)).
 
 ### 4.3bis `IPizzaSizeRepository`
 
@@ -313,9 +307,9 @@ un contratto (`public interface IToppingRepository` in C#), non di una classe co
 
 ### 4.7 Perché non c'è più `DiscountPolicy`
 
-Nel codice demo attuale esiste una classe [`DiscountPolicy.cs`](../../PizzaShop.Domain/DiscountPolicy.cs), con
-una soglia (`DiscountThreshold = 30.00`) e una percentuale (`DiscountRate = 0.10`) fisse, usata da `Order` per
-calcolare `Discount()` e `TotalAfterDiscount()`. In questo diagramma la logica di sconto è stata **rimossa del
+In una versione precedente del codice esisteva una classe `DiscountPolicy.cs`, con una soglia
+(`DiscountThreshold = 30.00`) e una percentuale (`DiscountRate = 0.10`) fisse, usata da `Order` per
+calcolare `Discount()` e `TotalAfterDiscount()`. La logica di sconto è stata **rimossa del
 tutto**, per semplificare il modello: niente classe `DiscountPolicy`, niente `Discount()`/`TotalAfterDiscount()`
 su `Order` (vedi [sezione 4.2](#42-order)). Il totale finale si calcola quindi direttamente da `Subtotal()` più
 l'eventuale costo di consegna.
@@ -336,8 +330,8 @@ business che il proprietario della pizzeria può modificare — il numero massim
 di consegna gratuita. Non contiene logica, solo valori: chi la usa (`Pizza`, `Order`) la riceve già pronta come
 parametro, senza sapere da dove arriva.
 
-> **Nota**: nel codice demo attuale `FreeDeliveryThreshold = 25.00` è una costante dichiarata dentro `Order`.
-> Qui il diagramma la rende **configurabile dal proprietario della pizzeria** (quindi letta da un database),
+> **Nota**: `FreeDeliveryThreshold` non è più una costante dichiarata dentro `Order` (in passato valeva
+> `25.00`). Ora è **configurabile dal proprietario della pizzeria** (letta da un database),
 > esattamente come il limite di topping di `Pizza` — vedi la sezione 5.3 per il perché `Order` resta comunque
 > un'entità "pura" invece di dipendere direttamente da un repository.
 

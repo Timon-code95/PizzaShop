@@ -13,12 +13,13 @@ lo stesso componente, solo visto "dal lato codice" invece che "dal lato architet
 anch'esso come diagramma-as-code, stavolta con la sintassi `classDiagram` di Mermaid, pensata proprio per le
 classi.
 
-> **Nota**: rispetto al codice demo attuale questo diagramma introduce alcune semplificazioni/modifiche
-> intenzionali: `ToppingCatalog` è disegnato nella sua forma "realistica" (topping letti da un database
-> tramite `IToppingRepository`), il prezzo base per formato è anch'esso letto da un database (tramite
-> `IPizzaSizeRepository`, invece della costante `PizzaSizeExtensions.BasePrice()`), e la logica di sconto
-> (`DiscountPolicy`) è stata rimossa del tutto — vedi i riquadri di approfondimento subito dopo il diagramma
-> per il perché.
+> **Nota**: questo diagramma rispecchia il codice effettivamente presente in `PizzaShop.Domain`: `ToppingCatalog`
+> legge i topping tramite `IToppingRepository`, il prezzo base per formato viene letto tramite
+> `IPizzaSizeRepository`, e la scontistica è stata rimossa del tutto. Le implementazioni concrete di queste
+> interfacce oggi sono hardcoded (progetto `PizzaShop.Infrastructure.InMemory`, che simula un database senza
+> averne uno vero), ma il dominio dipende solo dalle interfacce: sostituirle in futuro con implementazioni
+> basate su un database reale non richiederebbe modifiche a `Pizza`, `Order` o `ToppingCatalog` — vedi i
+> riquadri di approfondimento subito dopo il diagramma per il perché.
 
 ```mermaid
 ---
@@ -103,15 +104,18 @@ classDiagram
 > anche se il diagramma viene esportato o incollato altrove come immagine isolata (vedi
 > [Component Diagram](03-component-diagram.md) per il contesto architetturale completo).
 
-> **Perché `ToppingCatalog` non è più `<<static>>`**: nel codice demo attuale i topping sono un dizionario
-> hardcoded in memoria, ma questo diagramma vuole rappresentare un caso **realistico**, in cui topping e
+> **Perché `ToppingCatalog` non è più `<<static>>`**: per rappresentare un caso **realistico**, in cui topping e
 > relativi prezzi vengono letti da un database (coerentemente col **Data Access Component** già previsto nel
-> [Component Diagram](03-component-diagram.md)). Una classe che dipende da un database non può essere
+> [Component Diagram](03-component-diagram.md)), una classe che dipende da un database non può essere
 > `static`: ha bisogno di una dipendenza iniettata (`IToppingRepository`) e i suoi metodi diventano
-> asincroni (`Task<...>`), perché leggere da un DB è un'operazione di I/O. L'implementazione concreta di
-> `IToppingRepository` (query SQL, ORM, ecc.) non compare qui: appartiene al Data Access Component, un
-> componente distinto, esattamente come nell'esempio ufficiale del C4 Model `CoreBankingSystemConnection`
-> incapsula i dettagli di rete senza esporli al chiamante.
+> asincroni (`Task<...>`), perché leggere da un DB è un'operazione di I/O. Oggi l'unica implementazione
+> concreta di `IToppingRepository` è `InMemoryToppingRepository` (progetto `PizzaShop.Infrastructure.InMemory`),
+> che restituisce valori hardcoded invece di interrogare un vero database: appartiene comunque, concettualmente,
+> al Data Access Component, esattamente come nell'esempio ufficiale del C4 Model `CoreBankingSystemConnection`
+> incapsula i dettagli di rete senza esporli al chiamante. Sostituirla domani con una implementazione basata
+> su un vero database richiede solo di scrivere una nuova classe che implementa `IToppingRepository` e di
+> registrarla al posto di quella in-memory nella composizione delle dipendenze (`Program.cs` per la console
+> app, l'hook Reqnroll per i test): nessuna modifica a `ToppingCatalog`, `Pizza` o `Order`.
 
 > **Perché `Pizza` e `Order` restano "pure" invece di dipendere da un repository**: sia il numero massimo di
 > topping sia la soglia di consegna gratuita sono pensati come configurabili dal proprietario della pizzeria
@@ -123,11 +127,10 @@ classDiagram
 > questo diagramma, perché fuori scope dell'Order Management Component) è responsabile di caricare
 > `PricingSettings` una volta, tramite `IPricingSettingsRepository`, e di passarla a valle.
 
-> **Perché anche il prezzo base per formato è DB-driven**: nel codice demo attuale
-> `PizzaSizeExtensions.BasePrice()` è un metodo statico con uno `switch` su valori hardcoded (Small = 5.00,
-> Medium = 7.50, Large = 10.00). Qui il diagramma lo tratta come un altro dato di menu modificabile dal
-> proprietario della pizzeria, esattamente come i topping: `IPizzaSizeRepository` incapsula la lettura del
-> prezzo base per un dato `PizzaSize` da un database. Per restare coerente con la scelta fatta per `Pizza`
+> **Perché anche il prezzo base per formato è DB-driven**: è trattato come un altro dato di menu modificabile
+> dal proprietario della pizzeria, esattamente come i topping: `IPizzaSizeRepository` incapsula la lettura del
+> prezzo base per un dato `PizzaSize` da un database (oggi, in pratica, da `InMemoryPizzaSizeRepository`, con
+> valori hardcoded). Per restare coerente con la scelta fatta per `Pizza`
 > (un'entità pura, senza dipendenze da repository), il prezzo base **non viene risolto al momento del calcolo**
 > ma al momento della **creazione della pizza**: chi orchestra l'ordine chiama prima
 > `IPizzaSizeRepository.GetBasePriceAsync(size)`, poi crea la pizza passando il valore già risolto (es.
@@ -148,10 +151,10 @@ automaticamente (es. dagli strumenti di class diagram integrati nell'IDE) invece
 questo file.
 
 In questo caso specifico, `ToppingCatalog`/`IToppingRepository`, `PricingSettings`/`IPricingSettingsRepository`
-e `IPizzaSizeRepository` sono un esempio di **scelta di design intenzionale**, non di codice generato: il
-diagramma mostra deliberatamente una versione più realistica di quella attualmente implementata nel progetto
-demo, per illustrare come cambierebbero le classi una volta introdotta la persistenza reale (`PizzaShop.Domain`
-oggi non contiene ancora `IToppingRepository`, `IPricingSettingsRepository` né `IPizzaSizeRepository` nel
-codice, `MaxToppings`/`FreeDeliveryThreshold` sono ancora costanti hardcoded in `Pizza`/`Order`, il prezzo base
-per formato è ancora calcolato da `PizzaSizeExtensions.BasePrice()`, e il codice demo attuale include ancora
-`DiscountPolicy`, che qui è stata volutamente rimossa per semplificare il modello).
+e `IPizzaSizeRepository` sono ora effettivamente implementati in `PizzaShop.Domain`, con implementazioni
+concrete hardcoded in memoria nel progetto `PizzaShop.Infrastructure.InMemory`
+(`InMemoryToppingRepository`, `InMemoryPizzaSizeRepository`, `InMemoryPricingSettingsRepository`): questo
+separato progetto gioca lo stesso ruolo che avrebbe un progetto di data access basato su un vero database
+(es. Entity Framework Core), permettendo di sostituirlo in futuro senza toccare `PizzaShop.Domain` né i
+consumer (`Program.cs`, i test BDD). `DiscountPolicy` è stata rimossa dal codice per semplificare il modello,
+coerentemente con questo diagramma.

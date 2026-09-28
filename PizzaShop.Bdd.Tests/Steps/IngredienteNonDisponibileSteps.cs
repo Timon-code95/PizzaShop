@@ -9,12 +9,12 @@ namespace PizzaShop.Bdd.Tests.Steps;
 /// qui serve aggiungere solo il When e il Then specifici di questo scenario.
 /// </summary>
 [Binding]
-public class IngredienteNonDisponibileSteps(PizzaOrderContext context)
+public class IngredienteNonDisponibileSteps(PizzaOrderContext context, ToppingCatalog toppingCatalog)
 {
     [When(@"provo ad aggiungere un ingrediente extra non disponibile ""(.*)""")]
-    public void QuandoProvoAdAggiungereUnIngredienteExtraNonDisponibile(string nomeIngrediente)
+    public async Task QuandoProvoAdAggiungereUnIngredienteExtraNonDisponibile(string nomeIngrediente)
     {
-        context.LastError = Record.Exception(() => context.CurrentPizza!.AddTopping(ToppingCatalog.Get(nomeIngrediente)));
+        context.LastError = await Record.ExceptionAsync(() => toppingCatalog.GetAsync(nomeIngrediente));
     }
 
     [Then(@"dovrebbe essere sollevato un errore che segnala che l'ingrediente non è disponibile nel catalogo")]

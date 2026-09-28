@@ -4,13 +4,14 @@ namespace PizzaShop.Domain;
 /// A single pizza: a size plus a set of extra toppings. Encapsulates the "max toppings" business rule
 /// and knows how to compute its own price.
 /// </summary>
-public sealed class Pizza(PizzaSize size)
+/// <remarks>
+/// The base price for <paramref name="size"/> is resolved by the caller (via <see cref="IPizzaSizeRepository"/>)
+/// before the pizza is created, and passed in already resolved: <see cref="Pizza"/> is a pure domain entity
+/// and does not depend on any repository itself.
+/// </remarks>
+public sealed class Pizza(PizzaSize size, decimal basePrice)
 {
-    /// <summary>
-    /// Maximum number of extra toppings allowed on a single pizza.
-    /// </summary>
-    public const int MaxToppings = 5;
-
+    private readonly decimal _basePrice = basePrice;
     private readonly List<Topping> _toppings = [];
 
     public PizzaSize Size { get; } = size;
@@ -20,13 +21,15 @@ public sealed class Pizza(PizzaSize size)
     /// <summary>
     /// Adds an extra topping to the pizza.
     /// </summary>
+    /// <param name="topping">The topping to add.</param>
+    /// <param name="settings">The current pricing settings, used to enforce the maximum toppings rule.</param>
     /// <exception cref="InvalidOperationException">Thrown when the pizza already has the maximum allowed number of toppings.</exception>
-    public void AddTopping(Topping topping)
+    public void AddTopping(Topping topping, PricingSettings settings)
     {
-        if (_toppings.Count >= MaxToppings)
+        if (_toppings.Count >= settings.MaxToppingsPerPizza)
         {
             throw new InvalidOperationException(
-                $"Cannot add more than {MaxToppings} toppings to a single pizza.");
+                $"Cannot add more than {settings.MaxToppingsPerPizza} toppings to a single pizza.");
         }
 
         _toppings.Add(topping);
@@ -35,5 +38,5 @@ public sealed class Pizza(PizzaSize size)
     /// <summary>
     /// Total price of this pizza: base price for its size, plus the price of every topping added.
     /// </summary>
-    public decimal CalculatePrice() => Size.BasePrice() + _toppings.Sum(t => t.Price);
+    public decimal CalculatePrice() => _basePrice + _toppings.Sum(t => t.Price);
 }

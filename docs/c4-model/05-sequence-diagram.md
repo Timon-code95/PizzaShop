@@ -74,7 +74,8 @@ Questo flusso rispecchia fedelmente `Program.cs` (la demo console) e i metodi pu
 [`ToppingCatalog.cs`](../../PizzaShop.Domain/ToppingCatalog.cs). È anche lo stesso scenario descritto in
 linguaggio naturale nelle feature Gherkin di `PizzaShop.Bdd.Tests/Features/`.
 
-> **Nota**: rispetto al codice demo attuale questo diagramma riflette le stesse semplificazioni/modifiche
-> intenzionali del [class diagram](04-code-level-note.md): niente più `DiscountPolicy` (la logica di sconto è
-> stata rimossa), e `ToppingCatalog`/`PricingSettings` sono mostrati nella loro forma "realistica" (letti da un
-> database), non come l'attuale implementazione demo in memoria con costanti hardcoded.
+> **Nota**: questo diagramma rispecchia il codice effettivamente presente: niente più `DiscountPolicy` (la
+> logica di sconto è stata rimossa), e `ToppingCatalog`/`PricingSettings`/`IPizzaSizeRepository` sono usati
+> nella loro forma realistica (`PizzaShop.Domain` dipende solo dalle interfacce). Oggi le uniche implementazioni
+> di queste interfacce sono quelle hardcoded in memoria del progetto `PizzaShop.Infrastructure.InMemory`, che
+> gioca lo stesso ruolo che avrebbe un vero Data Access Component basato su database.
