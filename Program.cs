@@ -9,26 +9,22 @@ Console.WriteLine();
 
 // Composizione delle dipendenze: oggi le implementazioni sono in-memory (dati hardcoded), ma essendo
 // PizzaSize.cs/ToppingCatalog.cs/Order.cs scritti contro le sole interfacce, in futuro basterà sostituire
-// queste tre righe con implementazioni vere basate su database, senza toccare il resto del codice.
-IPizzaSizeRepository pizzaSizeRepository = new InMemoryPizzaSizeRepository();
+// queste implementazioni con implementazioni vere basate su database, senza toccare il resto del codice.
+// OrderCompositionService è il punto unico che parla con i repository (IPizzaSizeRepository,
+// IPricingSettingsRepository, ToppingCatalog) e l'unico che crea e assembla l'Order: Pizza e Order
+// restano entità di dominio pure.
 var toppingCatalog = new ToppingCatalog(new InMemoryToppingRepository());
-IPricingSettingsRepository pricingSettingsRepository = new InMemoryPricingSettingsRepository();
+var orderComposer = new OrderCompositionService(
+    new InMemoryPizzaSizeRepository(),
+    new InMemoryPricingSettingsRepository(),
+    toppingCatalog);
 
-var settings = await pricingSettingsRepository.GetAsync();
-
-var order = new Order("Mario Rossi");
-
-var margheritaBasePrice = await pizzaSizeRepository.GetBasePriceAsync(PizzaSize.Medium);
-var margherita = new Pizza(PizzaSize.Medium, margheritaBasePrice);
-margherita.AddTopping(await toppingCatalog.GetAsync("Mozzarella"), settings);
-order.AddPizza(margherita);
-
-var capricciosaBasePrice = await pizzaSizeRepository.GetBasePriceAsync(PizzaSize.Large);
-var capricciosa = new Pizza(PizzaSize.Large, capricciosaBasePrice);
-capricciosa.AddTopping(await toppingCatalog.GetAsync("Prosciutto"), settings);
-capricciosa.AddTopping(await toppingCatalog.GetAsync("Funghi"), settings);
-capricciosa.AddTopping(await toppingCatalog.GetAsync("Olive"), settings);
-order.AddPizza(capricciosa);
+var order = await orderComposer.CreateOrderAsync(
+    "Mario Rossi",
+    [
+        new PizzaOrderRequest(PizzaSize.Medium, ["Mozzarella"]),
+        new PizzaOrderRequest(PizzaSize.Large, ["Prosciutto", "Funghi", "Olive"]),
+    ]);
 
 foreach (var pizza in order.Pizzas)
 {
@@ -39,7 +35,9 @@ foreach (var pizza in order.Pizzas)
     Console.WriteLine($"- Pizza {pizza.Size} ({toppings}): {pizza.CalculatePrice().ToString("F2", culture)} EUR");
 }
 
+var totali = await orderComposer.CalculateTotalsAsync(order);
+
 Console.WriteLine();
-Console.WriteLine($"Subtotale:         {order.Subtotal().ToString("F2", culture)} EUR");
-Console.WriteLine($"Spesa di consegna: {order.DeliveryFee(settings).ToString("F2", culture)} EUR");
-Console.WriteLine($"Totale finale:     {order.GrandTotal(settings).ToString("F2", culture)} EUR");
+Console.WriteLine($"Subtotale:         {totali.Subtotal.ToString("F2", culture)} EUR");
+Console.WriteLine($"Spesa di consegna: {totali.DeliveryFee.ToString("F2", culture)} EUR");
+Console.WriteLine($"Totale finale:     {totali.GrandTotal.ToString("F2", culture)} EUR");

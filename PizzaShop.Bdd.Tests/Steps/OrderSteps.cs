@@ -10,53 +10,35 @@ namespace PizzaShop.Bdd.Tests.Steps;
 [Binding]
 public class OrderSteps(
     PizzaOrderContext context,
-    IPizzaSizeRepository pizzaSizeRepository,
-    ToppingCatalog toppingCatalog,
-    IPricingSettingsRepository pricingSettingsRepository)
+    OrderCompositionService orderComposer)
 {
     [Given(@"che il cliente ""(.*)"" ha ordinato le seguenti pizze")]
     public async Task DatoCheIlClienteHaOrdinatoLeSeguentiPizze(string cliente, Table tabellaPizze)
     {
-        var settings = await pricingSettingsRepository.GetAsync();
-        context.Settings = settings;
+        var pizze = tabellaPizze.Rows.Select(row => new PizzaOrderRequest(
+            Enum.Parse<PizzaSize>(row["Formato"], ignoreCase: true),
+            CommonPizzaSteps.SplitIngredienti(row["Ingredienti"]).ToList()));
 
-        var order = new Order(cliente);
-
-        foreach (var row in tabellaPizze.Rows)
-        {
-            var size = Enum.Parse<PizzaSize>(row["Formato"], ignoreCase: true);
-            var basePrice = await pizzaSizeRepository.GetBasePriceAsync(size);
-            var pizza = new Pizza(size, basePrice);
-
-            foreach (var nome in CommonPizzaSteps.SplitIngredienti(row["Ingredienti"]))
-            {
-                var topping = await toppingCatalog.GetAsync(nome);
-                pizza.AddTopping(topping, settings);
-            }
-
-            order.AddPizza(pizza);
-        }
-
-        context.CurrentOrder = order;
+        context.CurrentOrder = await orderComposer.CreateOrderAsync(cliente, pizze);
     }
 
     [When(@"calcolo il totale dell'ordine")]
-    public void QuandoCalcoloIlTotaleDellOrdine()
+    public async Task QuandoCalcoloIlTotaleDellOrdine()
     {
-        // Nessuna azione esplicita necessaria: Order calcola i valori "on demand" negli step Then successivi.
+        context.Totals = await orderComposer.CalculateTotalsAsync(context.CurrentOrder!);
     }
 
     [Then(@"il subtotale dovrebbe essere ""(.*)"" euro")]
     public void AlloraIlSubtotaleDovrebbeEssere(string valoreAtteso) =>
-        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.Subtotal());
+        Assert.Equal(Parse(valoreAtteso), context.Totals!.Subtotal);
 
     [Then(@"la spesa di consegna dovrebbe essere ""(.*)"" euro")]
     public void AlloraLaSpesaDiConsegnaDovrebbeEssere(string valoreAtteso) =>
-        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.DeliveryFee(context.Settings!));
+        Assert.Equal(Parse(valoreAtteso), context.Totals!.DeliveryFee);
 
     [Then(@"il totale finale dovrebbe essere ""(.*)"" euro")]
     public void AlloraIlTotaleFinaleDovrebbeEssere(string valoreAtteso) =>
-        Assert.Equal(Parse(valoreAtteso), context.CurrentOrder!.GrandTotal(context.Settings!));
+        Assert.Equal(Parse(valoreAtteso), context.Totals!.GrandTotal);
 
     private static decimal Parse(string value) => decimal.Parse(value, CultureInfo.InvariantCulture);
 }

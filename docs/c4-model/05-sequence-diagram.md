@@ -12,70 +12,93 @@ consegna incluse)"* — lo stesso caso d'uso rappresentato nei diagrammi [Contex
 ```mermaid
 sequenceDiagram
 	actor Cliente
+	participant OrderCompositionService
 	participant Order
 	participant Pizza
 	participant ToppingCatalog
 	participant PricingSettingsRepository as IPricingSettingsRepository
 	participant PizzaSizeRepository as IPizzaSizeRepository
 
-	Cliente->>Order: new Order(nomeCliente)
-	Cliente->>PricingSettingsRepository: GetAsync()
-	PricingSettingsRepository-->>Cliente: PricingSettings
+	Cliente->>OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)
+	OrderCompositionService->>PricingSettingsRepository: GetAsync()
+	PricingSettingsRepository-->>OrderCompositionService: PricingSettings
+	OrderCompositionService->>Order: new Order(nomeCliente)
 
-	loop Per ogni pizza dell'ordine
-		Cliente->>PizzaSizeRepository: GetBasePriceAsync(formato)
-		PizzaSizeRepository-->>Cliente: prezzo base
-		Cliente->>Pizza: new Pizza(formato, prezzo base)
-		loop Per ogni ingrediente extra scelto
-			Cliente->>ToppingCatalog: GetAsync(nomeIngrediente)
-			ToppingCatalog-->>Cliente: Topping
-			Cliente->>Pizza: AddTopping(topping, settings)
+	loop Per ogni PizzaOrderRequest
+		OrderCompositionService->>PizzaSizeRepository: GetBasePriceAsync(formato)
+		PizzaSizeRepository-->>OrderCompositionService: prezzo base
+		OrderCompositionService->>Pizza: new Pizza(formato, prezzo base)
+		loop Per ogni nome di ingrediente extra richiesto
+			OrderCompositionService->>ToppingCatalog: GetAsync(nomeIngrediente)
+			ToppingCatalog-->>OrderCompositionService: Topping
+			OrderCompositionService->>Pizza: AddTopping(topping, settings)
 		end
-		Cliente->>Order: AddPizza(pizza)
+		OrderCompositionService->>Order: AddPizza(pizza)
 	end
 
-	Cliente->>Order: GrandTotal(settings)
-	Order->>Pizza: CalculatePrice() (per ogni pizza)
-	Pizza-->>Order: prezzo pizza
-	Order->>Order: Subtotal() = somma dei prezzi
+	OrderCompositionService-->>Cliente: Order
 
-	alt Subtotale >= settings.FreeDeliveryThreshold
-		Order->>Order: DeliveryFee(settings) = 0
-	else Subtotale < settings.FreeDeliveryThreshold
-		Order->>Order: DeliveryFee(settings) = settings.StandardDeliveryFee
-	end
+	Cliente->>OrderCompositionService: CalculateTotalsAsync(order)
+	OrderCompositionService->>PricingSettingsRepository: GetAsync()
+	PricingSettingsRepository-->>OrderCompositionService: PricingSettings
+	OrderCompositionService->>Order: Subtotal()
+	Order-->>OrderCompositionService: subtotale
+	OrderCompositionService->>Order: DeliveryFee(settings)
+	Order-->>OrderCompositionService: spesa di consegna
+	OrderCompositionService->>Order: GrandTotal(settings)
+	Order-->>OrderCompositionService: totale finale
 
-	Order-->>Cliente: totale finale (GrandTotal)
+	OrderCompositionService-->>Cliente: OrderTotals
 ```
 
 ## Note di lettura
 - `actor` / `participant`: gli attori/oggetti coinvolti nello scambio di messaggi. Qui `Cliente` è la persona che
   usa il sistema, gli altri sono le classi/interfacce C# reali che compongono l'**Order Management Component**
   del [Component Diagram](03-component-diagram.md), descritte nel dettaglio nel
-  [class diagram](04-code-level-note.md).
-- `loop ... end`: rappresenta un'iterazione (qui: più pizze nell'ordine, e più ingredienti extra per pizza).
-- `alt ... else ... end`: rappresenta una diramazione condizionale (qui: se l'ordine supera o meno la soglia di
-  consegna gratuita).
+  [class diagram](04-code-level-note.md). `Cliente` non parla mai direttamente con i repository
+  (`IPizzaSizeRepository`, `IPricingSettingsRepository`), con `ToppingCatalog`, né con `Pizza`/`Order`: parla
+  solo con `OrderCompositionService`, che è il vero consumer di quelle dipendenze e l'unico che crea/assembla
+  un `Order` (vedi [04-code-level-note.md](04-code-level-note.md) e
+  [04a-class-diagram-spiegazione.md](04a-class-diagram-spiegazione.md#410-ordercompositionservice)).
+- `loop ... end`: rappresenta un'iterazione (qui: più pizze da comporre, e più ingredienti extra per pizza).
+- `alt ... else ... end`: non compare più in questo diagramma, perché la diramazione "consegna gratuita o a
+  pagamento" è ora incapsulata dentro `Order.DeliveryFee(settings)`, invocato come singola chiamata da
+  `OrderCompositionService` — resta comunque descritta nel dettaglio in
+  [Order.cs](../../PizzaShop.Domain/Order.cs) e nella sezione 4 del [class diagram](04-code-level-note.md).
 - Le frecce continue (`->>`) sono chiamate sincrone; le frecce tratteggiate (`-->>`) sono le risposte/ritorni.
-- `Cliente->>PricingSettingsRepository: GetAsync()` viene mostrato subito dopo la creazione dell'ordine, perché
-  `settings` (limite topping, soglia di consegna gratuita e costo di consegna standard) viene caricato una volta
-  e poi passato come parametro a `Pizza.AddTopping(...)` e ai metodi di `Order` che ne hanno bisogno — coerentemente
-  con la scelta di design spiegata in [04-code-level-note.md](04-code-level-note.md) (`Pizza` e `Order` restano
-  entità "pure", senza dipendere direttamente da un repository).
-- `Cliente->>PizzaSizeRepository: GetBasePriceAsync(formato)` viene chiamato **prima** di creare ogni `Pizza`,
-  non al momento del calcolo del totale: il prezzo base risolto viene passato direttamente al costruttore
-  (`new Pizza(formato, prezzo base)`), che lo conserva internamente. Per questo `Pizza.CalculatePrice()` non ha
-  bisogno di alcun parametro — restituisce semplicemente `_basePrice + somma dei topping` — ed `Order.Subtotal()`
-  può sommare i prezzi di tutte le pizze senza dover conoscere da dove arriva il prezzo base di ciascuna.
+- `Cliente->>OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)` è l'**unica** chiamata che
+  il cliente fa per comporre l'intero ordine: gli basta descrivere *cosa* vuole (una collezione di
+  `PizzaOrderRequest`, ciascuna con formato e nomi dei topping desiderati). Non chiama mai `new Order(...)`,
+  `new Pizza(...)` o `order.AddPizza(...)` direttamente: tutta questa orchestrazione avviene dentro
+  `OrderCompositionService`, che risolve le impostazioni di pricing **una sola volta** (`settings`) e le
+  riusa per ogni `Pizza.AddTopping(...)` del ciclo, coerentemente con la scelta di design spiegata in
+  [04-code-level-note.md](04-code-level-note.md) (`Pizza` e `Order` restano entità "pure", senza dipendere
+  direttamente da un repository).
+- Il prezzo base per formato viene risolto **prima** di creare ogni `Pizza`, non al momento del calcolo del
+  totale: il prezzo base risolto viene passato direttamente al costruttore (`new Pizza(formato, prezzo base)`),
+  che lo conserva internamente. Per questo `Pizza.CalculatePrice()` non ha bisogno di alcun parametro —
+  restituisce semplicemente `_basePrice + somma dei topping` — ed `Order.Subtotal()` può sommare i prezzi di
+  tutte le pizze senza dover conoscere da dove arriva il prezzo base di ciascuna.
+- `Cliente->>OrderCompositionService: CalculateTotalsAsync(order)` è la seconda (e ultima) chiamata che il
+  cliente fa: passa l'`Order` già composto e riceve indietro un `OrderTotals` con subtotale, spesa di consegna
+  e totale finale già calcolati. Anche qui le impostazioni vengono risolte internamente al servizio: il
+  cliente non deve mai leggere `PricingSettings` da solo né richiamare `Order.Subtotal()`/`DeliveryFee(...)`/
+  `GrandTotal(...)` direttamente.
 
 ## Corrispondenza con il codice
 Questo flusso rispecchia fedelmente `Program.cs` (la demo console) e i metodi pubblici di
+[`OrderCompositionService.cs`](../../PizzaShop.Domain/OrderCompositionService.cs) —
+in particolare `CreateOrderAsync` e `CalculateTotalsAsync` — oltre a
 [`Order.cs`](../../PizzaShop.Domain/Order.cs), [`Pizza.cs`](../../PizzaShop.Domain/Pizza.cs) e
 [`ToppingCatalog.cs`](../../PizzaShop.Domain/ToppingCatalog.cs). È anche lo stesso scenario descritto in
-linguaggio naturale nelle feature Gherkin di `PizzaShop.Bdd.Tests/Features/`.
+linguaggio naturale nelle feature Gherkin di `PizzaShop.Bdd.Tests/Features/` (gli step definitions chiamano
+`OrderCompositionService.CreateOrderAsync`/`CalculateTotalsAsync` esattamente come mostrato qui, invece di
+comporre l'ordine o calcolarne i totali da soli).
 
 > **Nota**: questo diagramma rispecchia il codice effettivamente presente: niente più `DiscountPolicy` (la
 > logica di sconto è stata rimossa), e `ToppingCatalog`/`PricingSettings`/`IPizzaSizeRepository` sono usati
-> nella loro forma realistica (`PizzaShop.Domain` dipende solo dalle interfacce). Oggi le uniche implementazioni
-> di queste interfacce sono quelle hardcoded in memoria del progetto `PizzaShop.Infrastructure.InMemory`, che
-> gioca lo stesso ruolo che avrebbe un vero Data Access Component basato su database.
+> nella loro forma realistica (`PizzaShop.Domain` dipende solo dalle interfacce), sempre tramite
+> `OrderCompositionService`, che ora è anche l'unico punto che crea e assembla un `Order`. Oggi le uniche
+> implementazioni di queste interfacce sono quelle hardcoded in memoria del progetto
+> `PizzaShop.Infrastructure.InMemory`, che gioca lo stesso ruolo che avrebbe un vero Data Access Component
+> basato su database.

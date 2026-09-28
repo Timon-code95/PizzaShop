@@ -11,26 +11,23 @@ namespace PizzaShop.Bdd.Tests.Steps;
 [Binding]
 public class CommonPizzaSteps(
     PizzaOrderContext context,
-    IPizzaSizeRepository pizzaSizeRepository,
-    ToppingCatalog toppingCatalog,
-    IPricingSettingsRepository pricingSettingsRepository)
+    OrderCompositionService orderComposer)
 {
     [Given(@"che ordino una pizza di formato ""(.*)""")]
     public async Task DatoCheOrdinoUnaPizzaDiFormato(string formato)
     {
         var size = Enum.Parse<PizzaSize>(formato, ignoreCase: true);
-        var basePrice = await pizzaSizeRepository.GetBasePriceAsync(size);
-        context.CurrentPizza = new Pizza(size, basePrice);
+        context.CurrentPizza = await orderComposer.CreatePizzaAsync(size);
     }
 
     [When(@"aggiungo i seguenti ingredienti extra ""(.*)""")]
     public async Task QuandoAggiungoISeguentiIngredientiExtra(string ingredienti)
     {
-        var settings = await pricingSettingsRepository.GetAsync();
+        var settings = await orderComposer.GetPricingSettingsAsync();
 
         foreach (var nome in SplitIngredienti(ingredienti))
         {
-            var topping = await toppingCatalog.GetAsync(nome);
+            var topping = await orderComposer.GetToppingAsync(nome);
             context.CurrentPizza!.AddTopping(topping, settings);
         }
     }

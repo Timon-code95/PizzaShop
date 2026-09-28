@@ -32,6 +32,12 @@ public class DependencyRegistrationHooks
         container.RegisterInstanceAs<IPizzaSizeRepository>(pizzaSizeRepository);
         container.RegisterInstanceAs<IToppingRepository>(toppingRepository);
         container.RegisterInstanceAs<IPricingSettingsRepository>(pricingSettingsRepository);
-        container.RegisterInstanceAs(new ToppingCatalog(toppingRepository));
+
+        var toppingCatalog = new ToppingCatalog(toppingRepository);
+        container.RegisterInstanceAs(toppingCatalog);
+
+        // OrderCompositionService è il consumer esplicito dei repository (vedi PizzaShop.Domain):
+        // gli step definitions non parlano più direttamente con IPizzaSizeRepository/IPricingSettingsRepository.
+        container.RegisterInstanceAs(new OrderCompositionService(pizzaSizeRepository, pricingSettingsRepository, toppingCatalog));
     }
 }

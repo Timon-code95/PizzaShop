@@ -13,7 +13,7 @@ public class PizzaOrderContext
 
     public Order? CurrentOrder { get; set; }
 
-    public PricingSettings? Settings { get; set; }
+    public OrderTotals? Totals { get; set; }
 
     public Exception? LastError { get; set; }
 }
