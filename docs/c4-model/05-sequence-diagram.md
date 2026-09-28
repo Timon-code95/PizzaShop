@@ -22,7 +22,7 @@ sequenceDiagram
 	participant PricingSettingsRepository as IPricingSettingsRepository
 	participant PizzaSizeRepository as IPizzaSizeRepository
 
-	Cliente->>OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)
+	Cliente->>+OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)
 	OrderCompositionService->>PricingSettingsRepository: GetAsync()
 	PricingSettingsRepository-->>OrderCompositionService: PricingSettings
 	OrderCompositionService->>Order: new Order(nomeCliente)
@@ -39,9 +39,9 @@ sequenceDiagram
 		OrderCompositionService->>Order: AddPizza(pizza)
 	end
 
-	OrderCompositionService-->>Cliente: Order
+	OrderCompositionService-->>-Cliente: Order
 
-	Cliente->>OrderCompositionService: CalculateTotalsAsync(order)
+	Cliente->>+OrderCompositionService: CalculateTotalsAsync(order)
 	OrderCompositionService->>PricingSettingsRepository: GetAsync()
 	PricingSettingsRepository-->>OrderCompositionService: PricingSettings
 	OrderCompositionService->>Order: Subtotal()
@@ -51,7 +51,7 @@ sequenceDiagram
 	OrderCompositionService->>Order: GrandTotal(settings)
 	Order-->>OrderCompositionService: totale finale
 
-	OrderCompositionService-->>Cliente: OrderTotals
+	OrderCompositionService-->>-Cliente: OrderTotals
 ```
 
 > Il titolo `Sequence Diagram: composizione di un ordine e calcolo del totale` è definito nel frontmatter
@@ -76,6 +76,14 @@ sequenceDiagram
   `OrderCompositionService` — resta comunque descritta nel dettaglio in
   [Order.cs](../../PizzaShop.Domain/Order.cs) e nella sezione 4 del [class diagram](04-code-level-note.md).
 - Le frecce continue (`->>`) sono chiamate sincrone; le frecce tratteggiate (`-->>`) sono le risposte/ritorni.
+- Il rettangolo verticale stretto sopra la lifeline di `OrderCompositionService` è la sua **activation bar**
+  (detta anche *focus of control*): indica il periodo in cui `OrderCompositionService` è effettivamente attivo,
+  cioè sta eseguendo codice o è in attesa di una risposta a una chiamata fatta da lui. In Mermaid si ottiene con
+  `+`/`-` sulle frecce (`->>+` per attivare, `-->>-` per disattivare). Qui è attivato **solo** per la durata
+  complessiva di `CreateOrderAsync` e di `CalculateTotalsAsync` — non per ogni singola chiamata interna verso i
+  repository o verso `Pizza`/`Order` — proprio per rendere visivamente immediato il punto chiave di questo
+  diagramma: `OrderCompositionService` resta l'unico protagonista attivo per l'intera durata di ciascuna delle
+  due operazioni, mentre il `Cliente` resta fermo ad aspettare una singola risposta.
 - `Cliente->>OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)` è l'**unica** chiamata che
   il cliente fa per comporre l'intero ordine: gli basta descrivere *cosa* vuole (una collezione di
   `PizzaOrderRequest`, ciascuna con formato e nomi dei topping desiderati). Non chiama mai `new Order(...)`,
