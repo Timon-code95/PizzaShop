@@ -167,7 +167,6 @@ Corrisponde a [`Pizza.cs`](../../PizzaShop.Domain/Pizza.cs). Rappresenta una sin
 ```mermaid
 classDiagram
 	class Order {
-		+const decimal StandardDeliveryFee = 3.50
 		+string CustomerName
 		+IReadOnlyList~Pizza~ Pizzas
 		+AddPizza(Pizza pizza) void
@@ -181,21 +180,19 @@ classDiagram
 Corrisponde a [`Order.cs`](../../PizzaShop.Domain/Order.cs). Rappresenta l'ordine del cliente, con una o più
 pizze:
 
-- `StandardDeliveryFee = 3.50`: costo di consegna standard, se sotto soglia.
 - `CustomerName`: nome del cliente che ha fatto l'ordine.
 - `Pizzas`: la lista delle pizze incluse nell'ordine.
 - `AddPizza(...)`: aggiunge una pizza all'ordine.
 - `Subtotal()`: somma dei prezzi di tutte le pizze.
 - `HasFreeDelivery(PricingSettings settings)`: `true` se il subtotale supera `settings.FreeDeliveryThreshold`.
-- `DeliveryFee(PricingSettings settings)`: `0` se `HasFreeDelivery(settings)`, altrimenti `StandardDeliveryFee`.
+- `DeliveryFee(PricingSettings settings)`: `0` se `HasFreeDelivery(settings)`, altrimenti `settings.StandardDeliveryFee`.
 - `GrandTotal(PricingSettings settings)`: totale finale (`Subtotal() + DeliveryFee(settings)`).
 
 > **Nota**: la logica di sconto è stata **rimossa del tutto** dal codice per semplificare il modello — vedi la
-> nota nella sezione 4.7 per il perché. Inoltre `FreeDeliveryThreshold` non è più una costante interna
-> a `Order`, ma arriva dall'esterno tramite il parametro `settings`
-> (vedi [`PricingSettings`](#48-pricingsettings)), perché è pensata come configurabile dal proprietario della
-> pizzeria. `StandardDeliveryFee` invece resta una costante fissa: non è pensata come un valore che cambia
-> spesso a runtime.
+> nota nella sezione 4.7 per il perché. Inoltre né `FreeDeliveryThreshold` né `StandardDeliveryFee` sono più
+> costanti interne a `Order`, ma arrivano dall'esterno tramite il parametro `settings`
+> (vedi [`PricingSettings`](#48-pricingsettings)), perché entrambi sono pensati come configurabili dal
+> proprietario della pizzeria.
 
 ### 4.3 `PizzaSize`
 
@@ -322,18 +319,19 @@ classDiagram
 		<<record>>
 		+int MaxToppingsPerPizza
 		+decimal FreeDeliveryThreshold
+		+decimal StandardDeliveryFee
 	}
 ```
 
 È un semplice contenitore dati (per questo è uno stereotipo `<<record>>`, come `Topping`): raggruppa le regole di
-business che il proprietario della pizzeria può modificare — il numero massimo di topping per pizza e la soglia
-di consegna gratuita. Non contiene logica, solo valori: chi la usa (`Pizza`, `Order`) la riceve già pronta come
-parametro, senza sapere da dove arriva.
+business che il proprietario della pizzeria può modificare — il numero massimo di topping per pizza, la soglia
+di consegna gratuita e il costo di consegna standard. Non contiene logica, solo valori: chi la usa (`Pizza`,
+`Order`) la riceve già pronta come parametro, senza sapere da dove arriva.
 
-> **Nota**: `FreeDeliveryThreshold` non è più una costante dichiarata dentro `Order` (in passato valeva
-> `25.00`). Ora è **configurabile dal proprietario della pizzeria** (letta da un database),
-> esattamente come il limite di topping di `Pizza` — vedi la sezione 5.3 per il perché `Order` resta comunque
-> un'entità "pura" invece di dipendere direttamente da un repository.
+> **Nota**: né `FreeDeliveryThreshold` né `StandardDeliveryFee` sono più costanti dichiarate dentro `Order`
+> (in passato valevano `25.00` e `3.50`). Ora sono **configurabili dal proprietario della pizzeria** (lette da
+> un database), esattamente come il limite di topping di `Pizza` — vedi la sezione 5.3 per il perché `Order`
+> resta comunque un'entità "pura" invece di dipendere direttamente da un repository.
 
 ### 4.9 `IPricingSettingsRepository`
 
@@ -480,7 +478,6 @@ classDiagram
 		}
 
 		class Order {
-			+const decimal StandardDeliveryFee = 3.50
 			+string CustomerName
 			+IReadOnlyList~Pizza~ Pizzas
 			+AddPizza(Pizza pizza) void
@@ -524,6 +521,7 @@ classDiagram
 			<<record>>
 			+int MaxToppingsPerPizza
 			+decimal FreeDeliveryThreshold
+			+decimal StandardDeliveryFee
 		}
 
 		class IPricingSettingsRepository {

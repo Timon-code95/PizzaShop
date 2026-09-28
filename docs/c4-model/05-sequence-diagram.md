@@ -42,7 +42,7 @@ sequenceDiagram
 	alt Subtotale >= settings.FreeDeliveryThreshold
 		Order->>Order: DeliveryFee(settings) = 0
 	else Subtotale < settings.FreeDeliveryThreshold
-		Order->>Order: DeliveryFee(settings) = StandardDeliveryFee
+		Order->>Order: DeliveryFee(settings) = settings.StandardDeliveryFee
 	end
 
 	Order-->>Cliente: totale finale (GrandTotal)
@@ -58,10 +58,10 @@ sequenceDiagram
   consegna gratuita).
 - Le frecce continue (`->>`) sono chiamate sincrone; le frecce tratteggiate (`-->>`) sono le risposte/ritorni.
 - `Cliente->>PricingSettingsRepository: GetAsync()` viene mostrato subito dopo la creazione dell'ordine, perché
-  `settings` (limite topping e soglia di consegna gratuita) viene caricato una volta e poi passato come
-  parametro a `Pizza.AddTopping(...)` e ai metodi di `Order` che ne hanno bisogno — coerentemente con la scelta
-  di design spiegata in [04-code-level-note.md](04-code-level-note.md) (`Pizza` e `Order` restano entità "pure",
-  senza dipendere direttamente da un repository).
+  `settings` (limite topping, soglia di consegna gratuita e costo di consegna standard) viene caricato una volta
+  e poi passato come parametro a `Pizza.AddTopping(...)` e ai metodi di `Order` che ne hanno bisogno — coerentemente
+  con la scelta di design spiegata in [04-code-level-note.md](04-code-level-note.md) (`Pizza` e `Order` restano
+  entità "pure", senza dipendere direttamente da un repository).
 - `Cliente->>PizzaSizeRepository: GetBasePriceAsync(formato)` viene chiamato **prima** di creare ogni `Pizza`,
   non al momento del calcolo del totale: il prezzo base risolto viene passato direttamente al costruttore
   (`new Pizza(formato, prezzo base)`), che lo conserva internamente. Per questo `Pizza.CalculatePrice()` non ha

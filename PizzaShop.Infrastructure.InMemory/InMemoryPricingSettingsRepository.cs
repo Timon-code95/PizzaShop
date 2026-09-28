@@ -13,7 +13,8 @@ public sealed class InMemoryPricingSettingsRepository : IPricingSettingsReposito
 {
     private static readonly PricingSettings Settings = new(
         MaxToppingsPerPizza: 5,
-        FreeDeliveryThreshold: 25.00m);
+        FreeDeliveryThreshold: 25.00m,
+        StandardDeliveryFee: 3.50m);
 
     public Task<PricingSettings> GetAsync() => Task.FromResult(Settings);
 }

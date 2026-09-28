@@ -36,7 +36,6 @@ classDiagram
 		}
 
 		class Order {
-			+const decimal StandardDeliveryFee = 3.50
 			+string CustomerName
 			+IReadOnlyList~Pizza~ Pizzas
 			+AddPizza(Pizza pizza) void
@@ -80,6 +79,7 @@ classDiagram
 			<<record>>
 			+int MaxToppingsPerPizza
 			+decimal FreeDeliveryThreshold
+			+decimal StandardDeliveryFee
 		}
 
 		class IPricingSettingsRepository {
@@ -141,8 +141,10 @@ classDiagram
 > nel diagramma, solo tra `IPizzaSizeRepository` e `PizzaSize` (la chiave usata per la ricerca).
 
 > **Perché non c'è più `DiscountPolicy`**: per semplificare il modello, la logica di sconto è stata rimossa del
-> tutto. Il costo di consegna standard (`StandardDeliveryFee`) resta invece una costante fissa in `Order`,
-> perché non è pensato come un valore che il proprietario debba modificare spesso a runtime.
+> tutto. Il costo di consegna standard (`StandardDeliveryFee`) invece è stato spostato dentro `PricingSettings`,
+> accanto a `MaxToppingsPerPizza` e `FreeDeliveryThreshold`: è un altro valore che il proprietario della pizzeria
+> potrebbe voler modificare (es. per una promozione), quindi segue la stessa logica DB-driven letta tramite
+> `IPricingSettingsRepository.GetAsync()`, invece di restare una costante fissa in `Order`.
 
 ## Da tenere a mente
 Questo file è pensato come **esempio didattico**, non come documentazione da tenere sincronizzata manualmente ad

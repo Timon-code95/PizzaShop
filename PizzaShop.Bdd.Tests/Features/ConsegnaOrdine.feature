@@ -3,6 +3,21 @@ Feature: Spese di consegna dell'ordine
   Voglio ricevere la consegna gratuita quando il mio ordine supera una certa soglia
   Così da essere premiato quando ordino di più
 
+  Background:
+	Given che sono configurati i seguenti prezzi base
+	  | Formato | PrezzoBase |
+	  | Small   | 5.00       |
+	  | Large   | 10.00      |
+	And che sono disponibili i seguenti topping
+	  | Nome       | Prezzo |
+	  | Mozzarella | 1.00   |
+	  | Funghi     | 1.20   |
+	  | Pepperoni  | 1.50   |
+	  | Prosciutto | 1.30   |
+	  | Olive      | 0.80   |
+	And che la soglia di consegna gratuita è "25.00" euro
+	And che la spesa di consegna standard è "3.50" euro
+
   Scenario: Ordine piccolo, consegna a pagamento
 	Given che il cliente "Mario" ha ordinato le seguenti pizze
 	  | Formato | Ingredienti |

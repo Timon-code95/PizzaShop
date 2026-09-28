@@ -95,6 +95,7 @@ erDiagram
 		int PricingSettingsId PK
 		int MaxToppingsPerPizza
 		decimal FreeDeliveryThreshold
+		decimal StandardDeliveryFee
 		int UpdatedByAccountId FK
 		datetime UpdatedAt
 	}
@@ -102,9 +103,10 @@ erDiagram
 
 > `PRICING_SETTINGS` non ha una relazione verso `ORDERS`: rappresenta una **regola di business letta al momento
 > della composizione dell'ordine** (tramite `IPricingSettingsRepository.GetAsync()`, vedi il class diagram), non un
-> dato collegato per chiave esterna. Il valore di `FreeDeliveryThreshold` effettivamente usato viene comunque
-> preservato come snapshot in `Orders.FreeDeliveryThresholdApplied`, per lo stesso motivo di storicizzazione spiegato
-> sopra. `MaxToppingsPerPizza` invece è solo un **vincolo di validazione** al momento dell'aggiunta di un topping
+> dato collegato per chiave esterna. I valori di `FreeDeliveryThreshold` e `StandardDeliveryFee` effettivamente
+> usati vengono comunque preservati come snapshot in `Orders.FreeDeliveryThresholdApplied` e `Orders.DeliveryFee`,
+> per lo stesso motivo di storicizzazione spiegato sopra. `MaxToppingsPerPizza` invece è solo un **vincolo di
+> validazione** al momento dell'aggiunta di un topping
 > (`Pizza.AddTopping(topping, settings)`): non essendo un valore che influenza il totale già calcolato, non serve
 > conservarne uno snapshot per riga d'ordine. Ha invece una relazione verso `ACCOUNTS` (`UpdatedByAccountId`), perché
 > solo un account con `Role = Owner` può modificarla, ed è utile tracciare chi l'ha aggiornata l'ultima volta (una
@@ -124,7 +126,7 @@ il prezzo quando si compone un *nuovo* ordine, non quelle in cui si legge quando
 |---|---|---|
 | `PIZZA_SIZES` | `IPizzaSizeRepository` | `GetBasePriceAsync(size)` legge `BasePrice` per formato, al momento della creazione di una nuova pizza |
 | `TOPPINGS` | `IToppingRepository` | `GetAllAsync()` / `GetByNameAsync(name)` leggono nome e prezzo dei topping disponibili (`IsAvailable = true`) |
-| `PRICING_SETTINGS` | `IPricingSettingsRepository` | `GetAsync()` legge la riga corrente delle impostazioni (max topping, soglia consegna gratuita) |
+| `PRICING_SETTINGS` | `IPricingSettingsRepository` | `GetAsync()` legge la riga corrente delle impostazioni (max topping, soglia consegna gratuita, costo di consegna standard) |
 | `ACCOUNTS` | *(nessuna interfaccia ancora nel class diagram)* | Letta dal **Security Component** dopo la validazione del token (vedi [03-component-diagram.md](03-component-diagram.md)), per risolvere l'account locale a partire dall'`ExternalId`; richiederebbe un `IAccountRepository` non ancora modellato |
 | `ORDERS` / `ORDER_PIZZAS` / `ORDER_PIZZA_TOPPINGS` | *(nessuna interfaccia ancora nel class diagram)* | Persistenza dell'ordine finale una volta calcolato; richiederebbe un `IOrderRepository` non ancora modellato, perché il caso d'uso scelto si ferma al calcolo del totale, non al salvataggio dell'ordine |
 

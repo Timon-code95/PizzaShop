@@ -105,6 +105,24 @@ namespace PizzaShop.Bdd.Tests.Features
             await testRunner.CollectScenarioErrorsAsync();
         }
         
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
+        {
+#line 6
+  #line hidden
+#line 7
+    await testRunner.GivenAsync("che il prezzo base per il formato \"Medium\" è \"7.50\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+            global::Reqnroll.Table table8 = new global::Reqnroll.Table(new string[] {
+                        "Nome",
+                        "Prezzo"});
+            table8.AddRow(new string[] {
+                        "Mozzarella",
+                        "1.00"});
+#line 8
+    await testRunner.AndAsync("che sono disponibili i seguenti topping", ((string)(null)), table8, "And ");
+#line hidden
+        }
+        
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
             return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/IngredienteNonDisponibile.feature.ndjson", 3);
@@ -146,7 +164,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Richiesta di un ingrediente extra non presente nel catalogo", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 6
+#line 12
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -156,13 +174,16 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 7
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 13
     await testRunner.GivenAsync("che ordino una pizza di formato \"Medium\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 8
+#line 14
     await testRunner.WhenAsync("provo ad aggiungere un ingrediente extra non disponibile \"Ananas\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 9
+#line 15
     await testRunner.ThenAsync("dovrebbe essere sollevato un errore che segnala che l\'ingrediente non è disponibi" +
                         "le nel catalogo", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden

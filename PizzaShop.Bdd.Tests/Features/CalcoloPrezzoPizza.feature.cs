@@ -105,6 +105,48 @@ namespace PizzaShop.Bdd.Tests.Features
             await testRunner.CollectScenarioErrorsAsync();
         }
         
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
+        {
+#line 6
+  #line hidden
+            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                        "Formato",
+                        "PrezzoBase"});
+            table1.AddRow(new string[] {
+                        "Small",
+                        "5.00"});
+            table1.AddRow(new string[] {
+                        "Medium",
+                        "7.50"});
+            table1.AddRow(new string[] {
+                        "Large",
+                        "10.00"});
+#line 7
+ await testRunner.GivenAsync("che sono configurati i seguenti prezzi base", ((string)(null)), table1, "Given ");
+#line hidden
+            global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                        "Nome",
+                        "Prezzo"});
+            table2.AddRow(new string[] {
+                        "Mozzarella",
+                        "1.00"});
+            table2.AddRow(new string[] {
+                        "Funghi",
+                        "1.20"});
+            table2.AddRow(new string[] {
+                        "Pepperoni",
+                        "1.50"});
+            table2.AddRow(new string[] {
+                        "Prosciutto",
+                        "1.30"});
+            table2.AddRow(new string[] {
+                        "Olive",
+                        "0.80"});
+#line 12
+ await testRunner.AndAsync("che sono disponibili i seguenti topping", ((string)(null)), table2, "And ");
+#line hidden
+        }
+        
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
             return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/CalcoloPrezzoPizza.feature.ndjson", 6);
@@ -153,7 +195,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Prezzo calcolato in base a formato e ingredienti extra", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 6
+#line 20
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -163,13 +205,16 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 7
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 21
  await testRunner.GivenAsync(string.Format("che ordino una pizza di formato \"{0}\"", formato), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 8
+#line 22
  await testRunner.WhenAsync(string.Format("aggiungo i seguenti ingredienti extra \"{0}\"", ingredienti), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 9
+#line 23
  await testRunner.ThenAsync(string.Format("il prezzo della pizza dovrebbe essere \"{0}\" euro", prezzoAtteso), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

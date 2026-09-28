@@ -105,6 +105,51 @@ namespace PizzaShop.Bdd.Tests.Features
             await testRunner.CollectScenarioErrorsAsync();
         }
         
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
+        {
+#line 6
+  #line hidden
+            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                        "Formato",
+                        "PrezzoBase"});
+            table1.AddRow(new string[] {
+                        "Small",
+                        "5.00"});
+            table1.AddRow(new string[] {
+                        "Large",
+                        "10.00"});
+#line 7
+ await testRunner.GivenAsync("che sono configurati i seguenti prezzi base", ((string)(null)), table1, "Given ");
+#line hidden
+            global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                        "Nome",
+                        "Prezzo"});
+            table2.AddRow(new string[] {
+                        "Mozzarella",
+                        "1.00"});
+            table2.AddRow(new string[] {
+                        "Funghi",
+                        "1.20"});
+            table2.AddRow(new string[] {
+                        "Pepperoni",
+                        "1.50"});
+            table2.AddRow(new string[] {
+                        "Prosciutto",
+                        "1.30"});
+            table2.AddRow(new string[] {
+                        "Olive",
+                        "0.80"});
+#line 11
+ await testRunner.AndAsync("che sono disponibili i seguenti topping", ((string)(null)), table2, "And ");
+#line hidden
+#line 18
+ await testRunner.AndAsync("che la soglia di consegna gratuita è \"25.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 19
+ await testRunner.AndAsync("che la spesa di consegna standard è \"3.50\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+        }
+        
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
             return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ConsegnaOrdine.feature.ndjson", 5);
@@ -146,7 +191,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine piccolo, consegna a pagamento", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 6
+#line 21
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -156,25 +201,28 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                             "Formato",
                             "Ingredienti"});
-                table1.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "Small",
                             ""});
-#line 7
- await testRunner.GivenAsync("che il cliente \"Mario\" ha ordinato le seguenti pizze", ((string)(null)), table1, "Given ");
+#line 22
+ await testRunner.GivenAsync("che il cliente \"Mario\" ha ordinato le seguenti pizze", ((string)(null)), table3, "Given ");
 #line hidden
-#line 10
+#line 25
  await testRunner.WhenAsync("calcolo il totale dell\'ordine", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 11
+#line 26
  await testRunner.ThenAsync("il subtotale dovrebbe essere \"5.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 12
+#line 27
  await testRunner.AndAsync("la spesa di consegna dovrebbe essere \"3.50\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 13
+#line 28
  await testRunner.AndAsync("il totale finale dovrebbe essere \"8.50\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -192,7 +240,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine medio, consegna gratuita", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 15
+#line 30
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -202,28 +250,31 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "Formato",
                             "Ingredienti"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "Large",
                             "Mozzarella,Funghi,Pepperoni"});
-                table2.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "Large",
                             "Prosciutto,Olive"});
-#line 16
- await testRunner.GivenAsync("che il cliente \"Luca\" ha ordinato le seguenti pizze", ((string)(null)), table2, "Given ");
+#line 31
+ await testRunner.GivenAsync("che il cliente \"Luca\" ha ordinato le seguenti pizze", ((string)(null)), table4, "Given ");
 #line hidden
-#line 20
+#line 35
  await testRunner.WhenAsync("calcolo il totale dell\'ordine", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 21
+#line 36
  await testRunner.ThenAsync("il subtotale dovrebbe essere \"25.80\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 22
+#line 37
  await testRunner.AndAsync("la spesa di consegna dovrebbe essere \"0.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 23
+#line 38
  await testRunner.AndAsync("il totale finale dovrebbe essere \"25.80\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -241,7 +292,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Ordine grande, consegna gratuita", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 25
+#line 40
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -251,28 +302,31 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
                             "Formato",
                             "Ingredienti"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "Large",
                             "Mozzarella,Funghi,Pepperoni,Prosciutto,Olive"});
-                table3.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "Large",
                             "Mozzarella,Funghi,Pepperoni,Prosciutto,Olive"});
-#line 26
- await testRunner.GivenAsync("che il cliente \"Giulia\" ha ordinato le seguenti pizze", ((string)(null)), table3, "Given ");
+#line 41
+ await testRunner.GivenAsync("che il cliente \"Giulia\" ha ordinato le seguenti pizze", ((string)(null)), table5, "Given ");
 #line hidden
-#line 30
+#line 45
  await testRunner.WhenAsync("calcolo il totale dell\'ordine", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 31
+#line 46
  await testRunner.ThenAsync("il subtotale dovrebbe essere \"31.60\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 32
+#line 47
  await testRunner.AndAsync("la spesa di consegna dovrebbe essere \"0.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 33
+#line 48
  await testRunner.AndAsync("il totale finale dovrebbe essere \"31.60\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

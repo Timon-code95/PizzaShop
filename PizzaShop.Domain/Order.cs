@@ -5,11 +5,6 @@ namespace PizzaShop.Domain;
 /// </summary>
 public sealed class Order(string customerName)
 {
-    /// <summary>
-    /// Delivery fee charged when the order does not qualify for free delivery.
-    /// </summary>
-    public const decimal StandardDeliveryFee = 3.50m;
-
     private readonly List<Pizza> _pizzas = [];
 
     public string CustomerName { get; } = customerName;
@@ -29,9 +24,9 @@ public sealed class Order(string customerName)
     public bool HasFreeDelivery(PricingSettings settings) => Subtotal() >= settings.FreeDeliveryThreshold;
 
     /// <summary>
-    /// Delivery fee for this order: zero if it qualifies for free delivery, <see cref="StandardDeliveryFee"/> otherwise.
+    /// Delivery fee for this order: zero if it qualifies for free delivery, <see cref="PricingSettings.StandardDeliveryFee"/> otherwise.
     /// </summary>
-    public decimal DeliveryFee(PricingSettings settings) => HasFreeDelivery(settings) ? 0m : StandardDeliveryFee;
+    public decimal DeliveryFee(PricingSettings settings) => HasFreeDelivery(settings) ? 0m : settings.StandardDeliveryFee;
 
     /// <summary>
     /// Grand total: subtotal plus delivery fee.

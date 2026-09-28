@@ -105,6 +105,39 @@ namespace PizzaShop.Bdd.Tests.Features
             await testRunner.CollectScenarioErrorsAsync();
         }
         
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
+        {
+#line 6
+  #line hidden
+#line 7
+ await testRunner.GivenAsync("che il prezzo base per il formato \"Large\" è \"10.00\" euro", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+            global::Reqnroll.Table table9 = new global::Reqnroll.Table(new string[] {
+                        "Nome",
+                        "Prezzo"});
+            table9.AddRow(new string[] {
+                        "Mozzarella",
+                        "1.00"});
+            table9.AddRow(new string[] {
+                        "Funghi",
+                        "1.20"});
+            table9.AddRow(new string[] {
+                        "Pepperoni",
+                        "1.50"});
+            table9.AddRow(new string[] {
+                        "Prosciutto",
+                        "1.30"});
+            table9.AddRow(new string[] {
+                        "Olive",
+                        "0.80"});
+#line 8
+ await testRunner.AndAsync("che sono disponibili i seguenti topping", ((string)(null)), table9, "And ");
+#line hidden
+#line 15
+ await testRunner.AndAsync("che il limite di ingredienti extra per pizza è 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+        }
+        
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
             return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/LimiteIngredienti.feature.ndjson", 4);
@@ -146,7 +179,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Aggiunta di ingredienti entro il limite consentito", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 6
+#line 17
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -156,14 +189,17 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 7
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 18
  await testRunner.GivenAsync("che ordino una pizza di formato \"Large\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 8
+#line 19
  await testRunner.WhenAsync("aggiungo i seguenti ingredienti extra \"Mozzarella,Funghi,Pepperoni,Prosciutto,Oli" +
                         "ve\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 9
+#line 20
  await testRunner.ThenAsync("l\'aggiunta degli ingredienti extra dovrebbe andare a buon fine", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -181,7 +217,7 @@ namespace PizzaShop.Bdd.Tests.Features
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Rifiuto di un ingrediente oltre il limite consentito", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 11
+#line 22
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -191,16 +227,19 @@ namespace PizzaShop.Bdd.Tests.Features
             else
             {
                 await this.ScenarioStartAsync();
-#line 12
+#line 6
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 23
  await testRunner.GivenAsync("che ordino una pizza di formato \"Large\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 13
+#line 24
  await testRunner.AndAsync("che la pizza ha già 5 ingredienti extra", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 14
+#line 25
  await testRunner.WhenAsync("provo ad aggiungere un ulteriore ingrediente extra \"Mozzarella\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 15
+#line 26
  await testRunner.ThenAsync("dovrebbe essere sollevato un errore che segnala il superamento del limite di ingr" +
                         "edienti extra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
