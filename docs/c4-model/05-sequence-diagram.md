@@ -22,36 +22,36 @@ sequenceDiagram
 	participant PricingSettingsRepository as IPricingSettingsRepository
 	participant PizzaSizeRepository as IPizzaSizeRepository
 
-	Cliente->>+OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)
-	OrderCompositionService->>PricingSettingsRepository: GetAsync()
-	PricingSettingsRepository-->>OrderCompositionService: PricingSettings
-	OrderCompositionService->>Order: new Order(nomeCliente)
+	Cliente->>+OrderCompositionService: Chiede di comporre un nuovo ordine con le pizze richieste
+	OrderCompositionService->>PricingSettingsRepository: Richiede le impostazioni di prezzo correnti
+	PricingSettingsRepository-->>OrderCompositionService: Restituisce le impostazioni di prezzo
+	OrderCompositionService->>Order: Crea un nuovo ordine vuoto per il cliente
 
-	loop Per ogni PizzaOrderRequest
-		OrderCompositionService->>PizzaSizeRepository: GetBasePriceAsync(formato)
-		PizzaSizeRepository-->>OrderCompositionService: prezzo base
-		OrderCompositionService->>Pizza: new Pizza(formato, prezzo base)
-		loop Per ogni nome di ingrediente extra richiesto
-			OrderCompositionService->>ToppingCatalog: GetAsync(nomeIngrediente)
-			ToppingCatalog-->>OrderCompositionService: Topping
-			OrderCompositionService->>Pizza: AddTopping(topping, settings)
+	loop Per ogni pizza richiesta
+		OrderCompositionService->>PizzaSizeRepository: Richiede il prezzo base per il formato scelto
+		PizzaSizeRepository-->>OrderCompositionService: Restituisce il prezzo base
+		OrderCompositionService->>Pizza: Crea la pizza nel formato richiesto
+		loop Per ogni ingrediente extra richiesto
+			OrderCompositionService->>ToppingCatalog: Richiede l'ingrediente extra per nome
+			ToppingCatalog-->>OrderCompositionService: Restituisce l'ingrediente trovato
+			OrderCompositionService->>Pizza: Aggiunge l'ingrediente extra alla pizza
 		end
-		OrderCompositionService->>Order: AddPizza(pizza)
+		OrderCompositionService->>Order: Aggiunge la pizza appena creata all'ordine
 	end
 
-	OrderCompositionService-->>-Cliente: Order
+	OrderCompositionService-->>-Cliente: Restituisce l'ordine composto
 
-	Cliente->>+OrderCompositionService: CalculateTotalsAsync(order)
-	OrderCompositionService->>PricingSettingsRepository: GetAsync()
-	PricingSettingsRepository-->>OrderCompositionService: PricingSettings
-	OrderCompositionService->>Order: Subtotal()
-	Order-->>OrderCompositionService: subtotale
-	OrderCompositionService->>Order: DeliveryFee(settings)
-	Order-->>OrderCompositionService: spesa di consegna
-	OrderCompositionService->>Order: GrandTotal(settings)
-	Order-->>OrderCompositionService: totale finale
+	Cliente->>+OrderCompositionService: Chiede il calcolo dei totali dell'ordine
+	OrderCompositionService->>PricingSettingsRepository: Richiede le impostazioni di prezzo correnti
+	PricingSettingsRepository-->>OrderCompositionService: Restituisce le impostazioni di prezzo
+	OrderCompositionService->>Order: Richiede la somma dei prezzi delle pizze
+	Order-->>OrderCompositionService: Restituisce il subtotale
+	OrderCompositionService->>Order: Richiede il calcolo della spesa di consegna
+	Order-->>OrderCompositionService: Restituisce la spesa di consegna
+	OrderCompositionService->>Order: Richiede il calcolo del totale finale
+	Order-->>OrderCompositionService: Restituisce il totale finale
 
-	OrderCompositionService-->>-Cliente: OrderTotals
+	OrderCompositionService-->>-Cliente: Restituisce i totali calcolati
 ```
 
 > Il titolo `Sequence Diagram: composizione di un ordine e calcolo del totale` è definito nel frontmatter
@@ -76,6 +76,11 @@ sequenceDiagram
   `OrderCompositionService` — resta comunque descritta nel dettaglio in
   [Order.cs](../../PizzaShop.Domain/Order.cs) e nella sezione 4 del [class diagram](04-code-level-note.md).
 - Le frecce continue (`->>`) sono chiamate sincrone; le frecce tratteggiate (`-->>`) sono le risposte/ritorni.
+- Le etichette sulle frecce sono scritte in linguaggio naturale (es. "Aggiunge la pizza appena creata all'ordine")
+  invece di riportare la firma esatta del metodo C# (es. `AddPizza(pizza)`): questa scelta privilegia la
+  leggibilità per chi presenta o guarda il diagramma senza conoscere il codice, a costo di perdere la
+  tracciabilità diretta col nome del metodo — per quella si veda la sezione
+  [Corrispondenza con il codice](#corrispondenza-con-il-codice) più sotto.
 - Il rettangolo verticale stretto sopra la lifeline di `OrderCompositionService` è la sua **activation bar**
   (detta anche *focus of control*): indica il periodo in cui `OrderCompositionService` è effettivamente attivo,
   cioè sta eseguendo codice o è in attesa di una risposta a una chiamata fatta da lui. In Mermaid si ottiene con
@@ -84,24 +89,24 @@ sequenceDiagram
   repository o verso `Pizza`/`Order` — proprio per rendere visivamente immediato il punto chiave di questo
   diagramma: `OrderCompositionService` resta l'unico protagonista attivo per l'intera durata di ciascuna delle
   due operazioni, mentre il `Cliente` resta fermo ad aspettare una singola risposta.
-- `Cliente->>OrderCompositionService: CreateOrderAsync(nomeCliente, richiestePizze)` è l'**unica** chiamata che
-  il cliente fa per comporre l'intero ordine: gli basta descrivere *cosa* vuole (una collezione di
-  `PizzaOrderRequest`, ciascuna con formato e nomi dei topping desiderati). Non chiama mai `new Order(...)`,
-  `new Pizza(...)` o `order.AddPizza(...)` direttamente: tutta questa orchestrazione avviene dentro
-  `OrderCompositionService`, che risolve le impostazioni di pricing **una sola volta** (`settings`) e le
-  riusa per ogni `Pizza.AddTopping(...)` del ciclo, coerentemente con la scelta di design spiegata in
-  [04-code-level-note.md](04-code-level-note.md) (`Pizza` e `Order` restano entità "pure", senza dipendere
-  direttamente da un repository).
+- "Chiede di comporre un nuovo ordine con le pizze richieste" (in codice: `CreateOrderAsync(nomeCliente,
+  richiestePizze)`) è l'**unica** chiamata che il cliente fa per comporre l'intero ordine: gli basta descrivere
+  *cosa* vuole (una collezione di `PizzaOrderRequest`, ciascuna con formato e nomi dei topping desiderati). Non
+  chiama mai `new Order(...)`, `new Pizza(...)` o `order.AddPizza(...)` direttamente: tutta questa orchestrazione
+  avviene dentro `OrderCompositionService`, che risolve le impostazioni di pricing **una sola volta**
+  (`settings`) e le riusa per ogni `Pizza.AddTopping(...)` del ciclo, coerentemente con la scelta di design
+  spiegata in [04-code-level-note.md](04-code-level-note.md) (`Pizza` e `Order` restano entità "pure", senza
+  dipendere direttamente da un repository).
 - Il prezzo base per formato viene risolto **prima** di creare ogni `Pizza`, non al momento del calcolo del
   totale: il prezzo base risolto viene passato direttamente al costruttore (`new Pizza(formato, prezzo base)`),
   che lo conserva internamente. Per questo `Pizza.CalculatePrice()` non ha bisogno di alcun parametro —
   restituisce semplicemente `_basePrice + somma dei topping` — ed `Order.Subtotal()` può sommare i prezzi di
   tutte le pizze senza dover conoscere da dove arriva il prezzo base di ciascuna.
-- `Cliente->>OrderCompositionService: CalculateTotalsAsync(order)` è la seconda (e ultima) chiamata che il
-  cliente fa: passa l'`Order` già composto e riceve indietro un `OrderTotals` con subtotale, spesa di consegna
-  e totale finale già calcolati. Anche qui le impostazioni vengono risolte internamente al servizio: il
-  cliente non deve mai leggere `PricingSettings` da solo né richiamare `Order.Subtotal()`/`DeliveryFee(...)`/
-  `GrandTotal(...)` direttamente.
+- "Chiede il calcolo dei totali dell'ordine" (in codice: `CalculateTotalsAsync(order)`) è la seconda (e ultima)
+  chiamata che il cliente fa: passa l'`Order` già composto e riceve indietro un `OrderTotals` con subtotale,
+  spesa di consegna e totale finale già calcolati. Anche qui le impostazioni vengono risolte internamente al
+  servizio: il cliente non deve mai leggere `PricingSettings` da solo né richiamare
+  `Order.Subtotal()`/`DeliveryFee(...)`/`GrandTotal(...)` direttamente.
 
 ## Corrispondenza con il codice
 Questo flusso rispecchia fedelmente `Program.cs` (la demo console) e i metodi pubblici di
