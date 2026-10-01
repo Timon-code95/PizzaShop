@@ -13,16 +13,16 @@ lo stesso componente, solo visto "dal lato codice" invece che "dal lato architet
 anch'esso come diagramma-as-code, stavolta con la sintassi `classDiagram` di Mermaid, pensata proprio per le
 classi.
 
-> **Nota**: questo diagramma rispecchia il codice effettivamente presente in `PizzaShop.Domain`: `ToppingCatalog`
-> legge i topping tramite `IToppingRepository`, il prezzo base per formato viene letto tramite
-> `IPizzaSizeRepository`, e la scontistica è stata rimossa del tutto. **Nessuna di queste due interfacce viene
+> **Nota**: questo diagramma rispecchia il codice effettivamente presente in `PizzaShop.Domain`: i topping
+> vengono letti tramite `IToppingRepository`, il prezzo base per formato viene letto tramite
+> `IPizzaSizeRepository`, e la scontistica è stata rimossa del tutto. **Nessuna di queste interfacce viene
 > chiamata direttamente da `Pizza`/`Order`**: il consumer effettivo è `OrderCompositionService`, una classe di
-> `PizzaShop.Domain` che orchestra l'intera composizione dell'ordine — risolve prezzo base e impostazioni, crea
-> le entità di dominio pure, **crea l'`Order` stesso e vi aggiunge le pizze** (`CreateOrderAsync`), e calcola i
-> totali finali (`CalculateTotalsAsync`) — vedi il riquadro dedicato subito dopo il diagramma. Le implementazioni
-> concrete di queste interfacce oggi sono hardcoded (progetto `PizzaShop.Infrastructure.InMemory`, che simula un
-> database senza averne uno vero), ma il dominio dipende solo dalle interfacce: sostituirle in futuro con
-> implementazioni basate su un database reale non richiederebbe modifiche a `Pizza`, `Order`, `ToppingCatalog` o
+> `PizzaShop.Domain` che orchestra l'intera composizione dell'ordine — risolve prezzo base, impostazioni e
+> topping, crea le entità di dominio pure, **crea l'`Order` stesso e vi aggiunge le pizze** (`CreateOrderAsync`),
+> e calcola i totali finali (`CalculateTotalsAsync`) — vedi il riquadro dedicato subito dopo il diagramma. Le
+> implementazioni concrete di queste interfacce oggi sono hardcoded (progetto `PizzaShop.Infrastructure.InMemory`,
+> che simula un database senza averne uno vero), ma il dominio dipende solo dalle interfacce: sostituirle in
+> futuro con implementazioni basate su un database reale non richiederebbe modifiche a `Pizza`, `Order` o
 > `OrderCompositionService` — vedi i riquadri di approfondimento subito dopo il diagramma per il perché.
 
 ```mermaid
@@ -67,12 +67,6 @@ classDiagram
 			+decimal Price
 		}
 
-		class ToppingCatalog {
-			-IToppingRepository _repository
-			+GetAllAsync() Task~IReadOnlyCollection~Topping~~
-			+GetAsync(string name) Task~Topping~
-		}
-
 		class IToppingRepository {
 			<<interface>>
 			+GetAllAsync() Task~IReadOnlyCollection~Topping~~
@@ -104,15 +98,22 @@ classDiagram
 			+decimal GrandTotal
 		}
 
+		class OrderWithTotals {
+			<<record>>
+			+Order Order
+			+OrderTotals Totals
+		}
+
 		class OrderCompositionService {
 			-IPizzaSizeRepository _pizzaSizeRepository
 			-IPricingSettingsRepository _pricingSettingsRepository
-			-ToppingCatalog _toppingCatalog
+			-IToppingRepository _toppingRepository
 			+CreatePizzaAsync(PizzaSize size) Task~Pizza~
 			+GetPricingSettingsAsync() Task~PricingSettings~
 			+GetToppingAsync(string name) Task~Topping~
 			+CreateOrderAsync(string customerName, IEnumerable~PizzaOrderRequest~ pizzas) Task~Order~
 			+CalculateTotalsAsync(Order order) Task~OrderTotals~
+			+CreateOrderWithTotalsAsync(string customerName, IEnumerable~PizzaOrderRequest~ pizzas) Task~OrderWithTotals~
 		}
 	}
 
@@ -121,16 +122,18 @@ classDiagram
 	Pizza --> PizzaSize : Size
 	Pizza ..> PricingSettings : usa
 	Order ..> PricingSettings : usa
-	ToppingCatalog --> IToppingRepository : usa
 	IPricingSettingsRepository ..> PricingSettings : restituisce
 	IPizzaSizeRepository ..> PizzaSize : usa
 	OrderCompositionService --> IPizzaSizeRepository : usa
 	OrderCompositionService --> IPricingSettingsRepository : usa
-	OrderCompositionService --> ToppingCatalog : usa
+	OrderCompositionService --> IToppingRepository : usa
 	OrderCompositionService ..> Pizza : crea
 	OrderCompositionService ..> Order : crea
 	OrderCompositionService ..> PizzaOrderRequest : riceve
 	OrderCompositionService ..> OrderTotals : restituisce
+	OrderCompositionService ..> OrderWithTotals : restituisce
+	OrderWithTotals --> Order : Order
+	OrderWithTotals --> OrderTotals : Totals
 ```
 
 > Il titolo `Code View: PizzaShop — Backend — Order Management Component` è ora parte del diagramma stesso
@@ -138,23 +141,24 @@ classDiagram
 > anche se il diagramma viene esportato o incollato altrove come immagine isolata (vedi
 > [Component Diagram](03-component-diagram.md) per il contesto architetturale completo).
 
-> **Perché `ToppingCatalog` non è più `<<static>>`**: per rappresentare un caso **realistico**, in cui topping e
-> relativi prezzi vengono letti da un database (coerentemente col **Data Access Component** già previsto nel
-> [Component Diagram](03-component-diagram.md)), una classe che dipende da un database non può essere
-> `static`: ha bisogno di una dipendenza iniettata (`IToppingRepository`) e i suoi metodi diventano
-> asincroni (`Task<...>`), perché leggere da un DB è un'operazione di I/O. Oggi l'unica implementazione
-> concreta di `IToppingRepository` è `InMemoryToppingRepository` (progetto `PizzaShop.Infrastructure.InMemory`),
-> che restituisce valori hardcoded invece di interrogare un vero database: appartiene comunque, concettualmente,
-> al Data Access Component, esattamente come nell'esempio ufficiale del C4 Model `CoreBankingSystemConnection`
-> incapsula i dettagli di rete senza esporli al chiamante. Sostituirla domani con una implementazione basata
-> su un vero database richiede solo di scrivere una nuova classe che implementa `IToppingRepository` e di
-> registrarla al posto di quella in-memory nella composizione delle dipendenze (`Program.cs` per la console
-> app, l'hook Reqnroll per i test): nessuna modifica a `ToppingCatalog`, `Pizza` o `Order`.
+> **Perché `IToppingRepository` non ha un wrapper come `ToppingCatalog`**: per rappresentare un caso
+> **realistico**, in cui topping e relativi prezzi vengono letti da un database (coerentemente col **Data
+> Access Component** già previsto nel [Component Diagram](03-component-diagram.md)), è sufficiente
+> un'interfaccia con metodi asincroni (`Task<...>`, perché leggere da un DB è un'operazione di I/O), esattamente
+> come `IPizzaSizeRepository` e `IPricingSettingsRepository`: non serve alcuna classe intermedia. Oggi l'unica
+> implementazione concreta di `IToppingRepository` è `InMemoryToppingRepository` (progetto
+> `PizzaShop.Infrastructure.InMemory`), che restituisce valori hardcoded invece di interrogare un vero database:
+> appartiene comunque, concettualmente, al Data Access Component, esattamente come nell'esempio ufficiale del
+> C4 Model `CoreBankingSystemConnection` incapsula i dettagli di rete senza esporli al chiamante. Sostituirla
+> domani con una implementazione basata su un vero database richiede solo di scrivere una nuova classe che
+> implementa `IToppingRepository` e di registrarla al posto di quella in-memory nella composizione delle
+> dipendenze (`Program.cs` per la console app, l'hook Reqnroll per i test): nessuna modifica a
+> `OrderCompositionService`, `Pizza` o `Order`.
 
 > **Perché `Pizza` e `Order` restano "pure" invece di dipendere da un repository**: sia il numero massimo di
 > topping sia la soglia di consegna gratuita sono pensati come configurabili dal proprietario della pizzeria
-> (quindi letti da un database), ma qui la scelta di design è diversa da `ToppingCatalog`. `Pizza` e `Order`
-> sono **entità di dominio**: farle dipendere direttamente da un repository le renderebbe difficili da
+> (quindi letti da un database), ma qui la scelta di design è diversa da quella per i repository. `Pizza` e
+> `Order` sono **entità di dominio**: farle dipendere direttamente da un repository le renderebbe difficili da
 > istanziare/testare e mescolerebbe "cosa sono" con "da dove arrivano i dati". Per questo ricevono le
 > impostazioni come **parametro** (`PricingSettings settings`), senza sapere nulla di come vengono caricate.
 > Chi orchestra la composizione dell'ordine è `OrderCompositionService`, una classe **interna all'Order
@@ -191,7 +195,7 @@ ogni modifica del codice. Se in futuro serve un class diagram aggiornato, la via
 automaticamente (es. dagli strumenti di class diagram integrati nell'IDE) invece di aggiornare a mano
 questo file.
 
-In questo caso specifico, `ToppingCatalog`/`IToppingRepository`, `PricingSettings`/`IPricingSettingsRepository`
+In questo caso specifico, `IToppingRepository`, `PricingSettings`/`IPricingSettingsRepository`
 e `IPizzaSizeRepository` sono ora effettivamente implementati in `PizzaShop.Domain`, con implementazioni
 concrete hardcoded in memoria nel progetto `PizzaShop.Infrastructure.InMemory`
 (`InMemoryToppingRepository`, `InMemoryPizzaSizeRepository`, `InMemoryPricingSettingsRepository`): questo
@@ -201,10 +205,9 @@ consumer (`Program.cs`, i test BDD). `DiscountPolicy` è stata rimossa dal codic
 coerentemente con questo diagramma.
 
 `OrderCompositionService` è anch'essa una classe reale in `PizzaShop.Domain` (non solo una nota testuale): è
-il consumer esplicito di `IPizzaSizeRepository` e `IPricingSettingsRepository` che prima mancava nel diagramma.
-`Program.cs` e gli step definitions BDD (`CommonPizzaSteps`, `OrderSteps`) dipendono ora da
-`OrderCompositionService` invece che dai singoli repository, esattamente come già facevano con `ToppingCatalog`
-per i topping.
+il consumer esplicito di `IPizzaSizeRepository`, `IPricingSettingsRepository` e `IToppingRepository`, gestiti
+in modo simmetrico. `Program.cs` e gli step definitions BDD (`CommonPizzaSteps`, `OrderSteps`) dipendono ora
+da `OrderCompositionService` invece che dai singoli repository.
 
 > **Perché `OrderCompositionService` crea anche `Order`, non solo `Pizza`**: in una prima versione di questo
 > diagramma, `OrderCompositionService` risolveva solo i dati (prezzo base, settings, topping) e creava le
@@ -219,3 +222,13 @@ per i topping.
 > sia il chiamante a richiamare `order.Subtotal()`/`order.DeliveryFee(settings)`/`order.GrandTotal(settings)`
 > con delle settings recuperate a parte. In un'architettura reale, il chiamante sarebbe un controller API sottile
 > che si limita a invocare questi due metodi: tutta la logica di orchestrazione resta dentro il dominio.
+
+> **`CreateOrderWithTotalsAsync`, un terzo metodo a chiamata singola**: `CreateOrderAsync` e
+> `CalculateTotalsAsync` restano due metodi separati (comodi per i test BDD, che verificano prima la
+> composizione e poi il calcolo come due step Given/When distinti), ma un cliente reale che vuole solo
+> comporre l'ordine e conoscerne subito il prezzo finale non dovrebbe essere costretto a fare due chiamate, né
+> a pagare il prezzo di una doppia interrogazione a `IPricingSettingsRepository`. Per questo
+> `OrderCompositionService` offre anche `CreateOrderWithTotalsAsync`, che risolve le impostazioni di prezzo
+> **una sola volta** e le passa a due metodi privati condivisi (`ComposeOrderAsync` e `ComputeTotals`, gli
+> stessi usati internamente da `CreateOrderAsync` e `CalculateTotalsAsync`), restituendo entrambi i risultati
+> in un unico `OrderWithTotals`. Non duplica logica né richiede le impostazioni due volte: le riusa.

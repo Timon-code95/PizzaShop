@@ -35,6 +35,21 @@ scelte già fatte negli altri livelli, questo modello E/R parte da tre assunzion
 3. **Un solo ruolo per account**: per restare nello scope del caso d'uso (composizione ordine), `ACCOUNTS.Role`
    distingue solo `Customer` da `Owner`. Un modello con ruoli/permessi granulari (RBAC) sarebbe over-engineering
    per questo esempio didattico.
+4. **Chiavi surrogate come `guid`, non `int` auto-incrementale**: tutte le PK/FK delle tabelle (`AccountId`,
+   `OrderId`, `OrderPizzaId`, `PizzaSizeId`, `ToppingId`, `PricingSettingsId`) sono `guid` generati dall'
+   applicazione, non interi auto-incrementati dal database. Questo evita che un `OrderId` sia enumerabile (un
+   cliente non può indovinare l'ordine di un altro incrementando un numero) ed è coerente con l'idea che gli
+   `AccountId` derivino da un accoppiamento con un Identity Provider esterno (vedi punto 1): l'id può essere
+   generato lato applicazione, prima ancora di scrivere la riga nel database, senza dover aspettare un
+   round-trip al DB per conoscerlo. `MaxToppingsPerPizza` in `PRICING_SETTINGS` resta invece un semplice
+   contatore (`int`), non un identificatore: non tutti i campi numerici diventano `guid`, solo le chiavi.
+5. **Lo stesso topping può comparire più volte sulla stessa pizza**: `MaxToppingsPerPizza` conta le **unità**
+   di ingrediente extra aggiunte, non i *tipi* distinti — è così che si comporta già `Pizza.AddTopping(...)` nel
+   class diagram, che accumula ogni chiamata in una `List<Topping>` senza controllo di unicità. Di conseguenza
+   `ORDER_PIZZA_TOPPINGS` ammette più righe con la stessa coppia `(OrderPizzaId, ToppingId)` (es. tre righe per
+   "tre mozzarelle sulla stessa pizza"), e ha una propria PK surrogata (`OrderPizzaToppingId`) invece di una PK
+   composita sulle due FK, proprio perché una PK composita imporrebbe un vincolo di unicità che qui non vogliamo
+   (vedi nota dopo il diagramma).
 
 ## Diagramma
 
@@ -48,15 +63,15 @@ erDiagram
 	TOPPINGS ||--o{ ORDER_PIZZA_TOPPINGS : "prezzo di listino per"
 
 	ACCOUNTS {
-		int AccountId PK
+		guid AccountId PK
 		string ExternalId "sub/oid dal token OIDC dell'Identity Provider"
 		string Role "Customer oppure Owner"
 		string DisplayName
 	}
 
 	ORDERS {
-		int OrderId PK
-		int CustomerAccountId FK
+		guid OrderId PK
+		guid CustomerAccountId FK
 		datetime CreatedAt
 		decimal Subtotal
 		decimal FreeDeliveryThresholdApplied
@@ -65,38 +80,39 @@ erDiagram
 	}
 
 	ORDER_PIZZAS {
-		int OrderPizzaId PK
-		int OrderId FK
-		int PizzaSizeId FK
+		guid OrderPizzaId PK
+		guid OrderId FK
+		guid PizzaSizeId FK
 		decimal BasePriceApplied
 		decimal LineTotal
 	}
 
 	ORDER_PIZZA_TOPPINGS {
-		int OrderPizzaId FK
-		int ToppingId FK
+		guid OrderPizzaToppingId PK
+		guid OrderPizzaId FK
+		guid ToppingId FK
 		decimal ToppingPriceApplied
 	}
 
 	PIZZA_SIZES {
-		int PizzaSizeId PK
+		guid PizzaSizeId PK
 		string Name
 		decimal BasePrice
 	}
 
 	TOPPINGS {
-		int ToppingId PK
+		guid ToppingId PK
 		string Name
 		decimal Price
 		bool IsAvailable
 	}
 
 	PRICING_SETTINGS {
-		int PricingSettingsId PK
+		guid PricingSettingsId PK
 		int MaxToppingsPerPizza
 		decimal FreeDeliveryThreshold
 		decimal StandardDeliveryFee
-		int UpdatedByAccountId FK
+		guid UpdatedByAccountId FK
 		datetime UpdatedAt
 	}
 ```
@@ -111,6 +127,13 @@ erDiagram
 > conservarne uno snapshot per riga d'ordine. Ha invece una relazione verso `ACCOUNTS` (`UpdatedByAccountId`), perché
 > solo un account con `Role = Owner` può modificarla, ed è utile tracciare chi l'ha aggiornata l'ultima volta (una
 > base minima di audit).
+
+> `ORDER_PIZZA_TOPPINGS` ha una PK surrogata propria (`OrderPizzaToppingId`), **non** una PK composita
+> `(OrderPizzaId, ToppingId)`: una PK composita imporrebbe un vincolo di unicità sulla coppia, impedendo che lo
+> stesso topping compaia più di una volta sulla stessa pizza. Qui invece è una scelta voluta — un cliente può
+> volere più unità dello stesso ingrediente (es. "doppia mozzarella") — quindi la tabella ammette più righe con
+> la stessa coppia `(OrderPizzaId, ToppingId)`, ciascuna rappresentando un'unità aggiunta, mentre la PK surrogata
+> le mantiene comunque identificabili singolarmente.
 
 ## Perché non c'è una tabella `Pizzas`/`Toppings` "di dominio" duplicata
 

@@ -9,7 +9,7 @@ container **Backend** viene "aperto" nei suoi componenti.
 
 A differenza di una prima bozza di questo documento, i componenti **non** ricalcano le singole classi C# — quel
 livello di dettaglio appartiene al [Livello 4 — Code](04-code-level-note.md), che mostra già il class diagram di
-`Order`, `Pizza` e `ToppingCatalog`. Qui, coerentemente con la definizione di "componente" del C4
+`Order`, `Pizza` e `OrderCompositionService`. Qui, coerentemente con la definizione di "componente" del C4
 Model (un raggruppamento di funzionalità correlate dietro un'interfaccia, tipicamente corrispondente a un
 namespace o assembly), il Backend viene scomposto in **5 componenti**:
 
@@ -110,14 +110,14 @@ C4Component
 ## Corrispondenza con il codice
 | Componente nel diagramma | Stato nella solution attuale |
 |---|---|
-| Order Management Component | Implementato: libreria `PizzaShop.Domain` (`Order.cs`, `Pizza.cs`, `ToppingCatalog.cs`) |
+| Order Management Component | Implementato: libreria `PizzaShop.Domain` (`Order.cs`, `Pizza.cs`, `OrderCompositionService.cs`) |
 | Order API | Non ancora implementato |
 | Security Component | Non ancora implementato |
 | Payment Gateway Adapter | Non ancora implementato |
 | Notification Adapter | Non ancora implementato |
 | Data Access Component | Non ancora implementato |
 
-Le classi reali che compongono l'**Order Management Component** (`Order`, `Pizza`, `ToppingCatalog`,
+Le classi reali che compongono l'**Order Management Component** (`Order`, `Pizza`, `OrderCompositionService`,
 con i relativi campi e metodi) sono mostrate nel dettaglio nel
 [Livello 4 — Code](04-code-level-note.md), il livello di zoom corretto per scendere fino alle singole classi.
 Le stesse regole di business sono quelle verificate dagli scenari Gherkin descritti in

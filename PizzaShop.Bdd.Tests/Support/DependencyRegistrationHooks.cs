@@ -5,9 +5,9 @@ using Reqnroll.BoDi;
 namespace PizzaShop.Bdd.Tests.Support;
 
 /// <summary>
-/// Composes the dependencies needed by the domain (repositories + <see cref="ToppingCatalog"/>) before
-/// each scenario runs, using Reqnroll's built-in dependency injection (context injection). Each scenario
-/// gets its own empty <see cref="TestPizzaSizeRepository"/>/<see cref="TestToppingRepository"/>/
+/// Composes the dependencies needed by the domain (repositories) before each scenario runs, using
+/// Reqnroll's built-in dependency injection (context injection). Each scenario gets its own empty
+/// <see cref="TestPizzaSizeRepository"/>/<see cref="TestToppingRepository"/>/
 /// <see cref="TestPricingSettingsRepository"/> instance: prices and settings are populated explicitly by
 /// the scenario itself (see <see cref="Steps.TestDataSteps"/>), instead of relying on whatever a shared
 /// implementation happens to hardcode. This keeps every scenario self-contained and readable without
@@ -33,11 +33,8 @@ public class DependencyRegistrationHooks
         container.RegisterInstanceAs<IToppingRepository>(toppingRepository);
         container.RegisterInstanceAs<IPricingSettingsRepository>(pricingSettingsRepository);
 
-        var toppingCatalog = new ToppingCatalog(toppingRepository);
-        container.RegisterInstanceAs(toppingCatalog);
-
         // OrderCompositionService è il consumer esplicito dei repository (vedi PizzaShop.Domain):
-        // gli step definitions non parlano più direttamente con IPizzaSizeRepository/IPricingSettingsRepository.
-        container.RegisterInstanceAs(new OrderCompositionService(pizzaSizeRepository, pricingSettingsRepository, toppingCatalog));
+        // gli step definitions non parlano più direttamente con IPizzaSizeRepository/IPricingSettingsRepository/IToppingRepository.
+        container.RegisterInstanceAs(new OrderCompositionService(pizzaSizeRepository, pricingSettingsRepository, toppingRepository));
     }
 }

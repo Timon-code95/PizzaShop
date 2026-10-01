@@ -11,14 +11,18 @@
 - [5. Le relazioni tra le classi](#5-le-relazioni-tra-le-classi)
 - [6. Diagramma completo commentato](#6-diagramma-completo-commentato)
 
-> **Aggiornamento**: `OrderCompositionService` (sezione [4.10](#410-ordercompositionservice)) è stata introdotta
+> **Aggiornamento**: `OrderCompositionService` (sezione [4.9](#49-ordercompositionservice)) è stata introdotta
 > per essere il consumer esplicito e visibile di `IPizzaSizeRepository`/`IPricingSettingsRepository`: prima di
 > questa modifica il diagramma citava un "livello applicativo interno all'Order Management Component" senza
 > che una classe concreta lo rappresentasse — un'imprecisione ora corretta. In un secondo passaggio, lo stesso
 > servizio è stato esteso con `CreateOrderAsync` e `CalculateTotalsAsync`: prima creava solo `Pizza`, mentre la
 > creazione dell'`Order` e il calcolo dei totali restavano a carico del chiamante — un'altra imprecisione, dato
 > che il nome della classe suggeriva già che dovesse occuparsene lei. Ora `OrderCompositionService` è l'unico
-> punto che crea e assembla un `Order` completo.
+> punto che crea e assembla un `Order` completo. In un terzo passaggio è stato rimosso il wrapper
+> `ToppingCatalog`, che era un semplice pass-through su `IToppingRepository`: `OrderCompositionService` ora
+> dipende direttamente da `IToppingRepository`, esattamente come già faceva per `IPizzaSizeRepository` e
+> `IPricingSettingsRepository` — i tre repository sono quindi trattati in modo simmetrico (sezione
+> [4.5](#45-itoppingrepository)).
 
 > Le sezioni 4 e 5 mostrano gli snippet delle singole classi/relazioni senza il riquadro `namespace` per
 > restare più leggibili in isolamento; il riquadro compare per intero solo nel diagramma reale ([04-code-level-note.md](04-code-level-note.md)) e nel riepilogo finale della sezione 6.
@@ -160,13 +164,13 @@ Corrisponde a [`Pizza.cs`](../../PizzaShop.Domain/Pizza.cs). Rappresenta una sin
 
 > **Nota**: il limite di ingredienti extra non è più una costante interna a `Pizza` (in passato era
 > `MaxToppings = 5`): è configurabile dal proprietario della pizzeria (letto da un database) e arriva
-> dall'esterno tramite il parametro `settings` (vedi [`PricingSettings`](#48-pricingsettings)). `Pizza`
+> dall'esterno tramite il parametro `settings` (vedi [`PricingSettings`](#47-pricingsettings)). `Pizza`
 > resta comunque un'entità "pura": non sa nulla di database o repository, riceve solo il valore già
 > pronto — vedi la sezione 5.3 per il perché di questa scelta.
 >
 > Lo stesso vale per il prezzo base: `CalculatePrice()` non prende parametri, ma il prezzo base non è più
 > calcolato da un metodo hardcoded. Il prezzo base viene risolto da `OrderCompositionService.CreatePizzaAsync`
-> (sezione [4.10](#410-ordercompositionservice)), tramite
+> (sezione [4.9](#49-ordercompositionservice)), tramite
 > [`IPizzaSizeRepository`](#43bis-ipizzasizerepository), e passato al **costruttore** di `Pizza`
 > (`new Pizza(size, basePrice)`), che lo salva in `_basePrice`. Per questo `CalculatePrice()` non ha bisogno di
 > alcun parametro: il valore è già disponibile internamente, esattamente come avviene per i `Topping` già
@@ -199,9 +203,9 @@ pizze:
 - `GrandTotal(PricingSettings settings)`: totale finale (`Subtotal() + DeliveryFee(settings)`).
 
 > **Nota**: la logica di sconto è stata **rimossa del tutto** dal codice per semplificare il modello — vedi la
-> nota nella sezione 4.7 per il perché. Inoltre né `FreeDeliveryThreshold` né `StandardDeliveryFee` sono più
+> nota nella sezione 4.6 per il perché. Inoltre né `FreeDeliveryThreshold` né `StandardDeliveryFee` sono più
 > costanti interne a `Order`, ma arrivano dall'esterno tramite il parametro `settings`
-> (vedi [`PricingSettings`](#48-pricingsettings)), perché entrambi sono pensati come configurabili dal
+> (vedi [`PricingSettings`](#47-pricingsettings)), perché entrambi sono pensati come configurabili dal
 > proprietario della pizzeria.
 
 ### 4.3 `PizzaSize`
@@ -242,9 +246,9 @@ questo diagramma perché appartiene a un altro componente.
 
 > **Perché non è `Pizza` a dipendere direttamente da `IPizzaSizeRepository`?** Per lo stesso motivo per cui
 > `Pizza`/`Order` non dipendono direttamente da `IPricingSettingsRepository` (vedi la nota nella sezione
-> [4.9](#49-ipricingsettingsrepository)): `Pizza` è un'entità di dominio e deve restare facile da istanziare e
+> [4.8](#48-ipricingsettingsrepository)): `Pizza` è un'entità di dominio e deve restare facile da istanziare e
 > testare, senza sapere da dove arrivano i dati. Il prezzo base viene quindi risolto **prima** di creare la
-> pizza da `OrderCompositionService.CreatePizzaAsync(size)` (sezione [4.10](#410-ordercompositionservice)),
+> pizza da `OrderCompositionService.CreatePizzaAsync(size)` (sezione [4.9](#49-ordercompositionservice)),
 > che chiama `GetBasePriceAsync(size)` e passa il risultato al **costruttore** di
 > `Pizza` (`new Pizza(size, basePrice)`), che lo conserva in `_basePrice`. `CalculatePrice()` lo userà poi
 > senza bisogno di riceverlo di nuovo come parametro a ogni chiamata.
@@ -265,37 +269,7 @@ stereotipo `<<record>>` perché nel codice è dichiarato come `public sealed rec
 — un record C#, tipicamente immutabile e con uguaglianza per valore (due `Topping` con stesso nome e prezzo sono
 considerati uguali).
 
-### 4.5 `ToppingCatalog`
-
-```mermaid
-classDiagram
-	class ToppingCatalog {
-		-IToppingRepository _repository
-		+GetAllAsync() Task~IReadOnlyCollection~Topping~~
-		+GetAsync(string name) Task~Topping~
-	}
-```
-
-> **Nota**: questa versione è diversa da [`ToppingCatalog.cs`](../../PizzaShop.Domain/ToppingCatalog.cs), che
-> nel progetto demo è `public static class ToppingCatalog` con un dizionario hardcoded in memoria (nessun
-> database). Qui il diagramma mostra deliberatamente una versione più **realistica**: topping e prezzi letti
-> da un database tramite il [Data Access Component](03-component-diagram.md), non un catalogo statico fisso
-> nel codice. Vedi la sezione 4.6 per l'interfaccia `IToppingRepository` introdotta a questo scopo.
-
-È il catalogo di ingredienti disponibili, reso disponibile all'esterno tramite due operazioni:
-
-- `_repository`: dipendenza privata verso l'astrazione di persistenza (campo, non parametro di metodo — viene
-  iniettata una volta, tipicamente nel costruttore, e riusata a ogni chiamata).
-- `GetAllAsync()`: tutti gli ingredienti disponibili, letti dal database.
-- `GetAsync(string name)`: cerca un ingrediente per nome, letto dal database (lancia eccezione/ritorna
-  `null` se non esiste, a seconda della convenzione scelta).
-
-I metodi sono **asincroni** (`Task<...>`) perché leggere da un database è un'operazione di I/O: bloccare un
-thread in attesa di una risposta di rete/disco sarebbe uno spreco di risorse, specialmente in un'applicazione
-web con molte richieste concorrenti (coerente con `Order API` implementata come ASP.NET Core Web API nel
-[Component Diagram](03-component-diagram.md)).
-
-### 4.6 `IToppingRepository`
+### 4.5 `IToppingRepository`
 
 ```mermaid
 classDiagram
@@ -306,14 +280,28 @@ classDiagram
 	}
 ```
 
-È il confine (contratto) tra l'**Order Management Component** e il **Data Access Component**: `ToppingCatalog`
-conosce solo questa interfaccia, non sa nulla di SQL, stringhe di connessione o ORM usati per implementarla.
-L'implementazione concreta (es. `SqlToppingRepository`) non compare in questo diagramma perché appartiene a un
-altro componente — esattamente come, nell'esempio ufficiale del C4 Model, `CoreBankingSystemConnection`
-incapsula i dettagli di rete senza esporli a chi la usa. Lo stereotipo `<<interface>>` segnala che si tratta di
-un contratto (`public interface IToppingRepository` in C#), non di una classe concreta istanziabile.
+È il confine (contratto) tra l'**Order Management Component** e il **Data Access Component**, esattamente
+come `IPizzaSizeRepository` (sezione [4.3bis](#43bis-ipizzasizerepository)) e `IPricingSettingsRepository`
+(sezione [4.8](#48-ipricingsettingsrepository)): incapsula la lettura di topping e prezzi da un database in
+modo asincrono (`Task<...>`), senza esporre dettagli di SQL, stringhe di connessione o ORM usati per
+implementarla. L'implementazione concreta (es. `SqlToppingRepository`) non compare in questo diagramma perché
+appartiene a un altro componente — esattamente come, nell'esempio ufficiale del C4 Model,
+`CoreBankingSystemConnection` incapsula i dettagli di rete senza esporli a chi la usa. Lo stereotipo
+`<<interface>>` segnala che si tratta di un contratto (`public interface IToppingRepository` in C#), non di
+una classe concreta istanziabile.
 
-### 4.7 Perché non c'è più `DiscountPolicy`
+- `GetAllAsync()`: tutti gli ingredienti disponibili, letti dal database.
+- `GetByNameAsync(string name)`: cerca un ingrediente per nome, letto dal database (lancia
+  `KeyNotFoundException` se non esiste).
+
+> **Nota**: in una versione precedente di questo diagramma esisteva anche un wrapper `ToppingCatalog`, una
+> classe applicativa con un campo privato `_repository` che si limitava a inoltrare le chiamate a
+> `IToppingRepository`. Era però un semplice pass-through senza logica propria, ed era l'unico dei tre
+> repository ad avere un livello di indirezione in più: è stato quindi rimosso, e `OrderCompositionService`
+> (sezione [4.9](#49-ordercompositionservice)) ora dipende direttamente da `IToppingRepository`, come già
+> faceva per `IPizzaSizeRepository` e `IPricingSettingsRepository`.
+
+### 4.6 Perché non c'è più `DiscountPolicy`
 
 In una versione precedente del codice esisteva una classe `DiscountPolicy.cs`, con una soglia
 (`DiscountThreshold = 30.00`) e una percentuale (`DiscountRate = 0.10`) fisse, usata da `Order` per
@@ -322,7 +310,7 @@ tutto**, per semplificare il modello: niente classe `DiscountPolicy`, niente `Di
 su `Order` (vedi [sezione 4.2](#42-order)). Il totale finale si calcola quindi direttamente da `Subtotal()` più
 l'eventuale costo di consegna.
 
-### 4.8 `PricingSettings`
+### 4.7 `PricingSettings`
 
 ```mermaid
 classDiagram
@@ -344,7 +332,7 @@ di consegna gratuita e il costo di consegna standard. Non contiene logica, solo 
 > un database), esattamente come il limite di topping di `Pizza` — vedi la sezione 5.3 per il perché `Order`
 > resta comunque un'entità "pura" invece di dipendere direttamente da un repository.
 
-### 4.9 `IPricingSettingsRepository`
+### 4.8 `IPricingSettingsRepository`
 
 ```mermaid
 classDiagram
@@ -359,19 +347,17 @@ topping: incapsula la lettura delle impostazioni da un database, restituendole c
 un metodo asincrono (`Task<...>`), coerentemente col fatto che leggere da un DB è un'operazione di I/O.
 L'implementazione concreta non compare in questo diagramma, perché appartiene a un altro componente.
 
-> **Perché non è `Pizza`/`Order` a dipendere direttamente da `IPricingSettingsRepository`, come invece
-> fa `ToppingCatalog` con `IToppingRepository`?** `ToppingCatalog` è un piccolo servizio applicativo, mentre
-> `Pizza` e `Order` rappresentano entità di dominio: farle dipendere da un repository le
-> renderebbe più difficili da istanziare e testare, e mescolerebbe "cosa sono" con "da dove arrivano i dati".
-> Per questo qui si è scelto un livello di indirezione in più: `OrderCompositionService` (sezione
-> [4.10](#410-ordercompositionservice)), un servizio applicativo interno all'**Order Management Component**
-> stesso e ora esplicitamente presente nel diagramma, chiama `IPricingSettingsRepository.GetAsync()` una volta
-> e passa il risultato (`PricingSettings`) a valle, come semplice parametro. **Non** è l'Order API a farlo
-> direttamente: l'Order API inoltra la richiesta all'Order Management Component (vedi
-> [Component Diagram](03-component-diagram.md)) e resta un livello sottile, senza conoscere i dettagli di
-> come vengono risolti prezzi e impostazioni.
+> **Perché non è `Pizza`/`Order` a dipendere direttamente da `IPricingSettingsRepository`?** `Pizza` e `Order`
+> rappresentano entità di dominio: farle dipendere da un repository le renderebbe più difficili da istanziare
+> e testare, e mescolerebbe "cosa sono" con "da dove arrivano i dati". Per questo qui si è scelto un livello
+> di indirezione in più: `OrderCompositionService` (sezione [4.9](#49-ordercompositionservice)), un servizio
+> applicativo interno all'**Order Management Component** stesso e ora esplicitamente presente nel diagramma,
+> chiama `IPricingSettingsRepository.GetAsync()` una volta e passa il risultato (`PricingSettings`) a valle,
+> come semplice parametro. **Non** è l'Order API a farlo direttamente: l'Order API inoltra la richiesta
+> all'Order Management Component (vedi [Component Diagram](03-component-diagram.md)) e resta un livello
+> sottile, senza conoscere i dettagli di come vengono risolti prezzi e impostazioni.
 
-### 4.10 `OrderCompositionService`
+### 4.9 `OrderCompositionService`
 
 ```mermaid
 classDiagram
@@ -388,29 +374,37 @@ classDiagram
 		+decimal GrandTotal
 	}
 
+	class OrderWithTotals {
+		<<record>>
+		+Order Order
+		+OrderTotals Totals
+	}
+
 	class OrderCompositionService {
 		-IPizzaSizeRepository _pizzaSizeRepository
 		-IPricingSettingsRepository _pricingSettingsRepository
-		-ToppingCatalog _toppingCatalog
+		-IToppingRepository _toppingRepository
 		+CreatePizzaAsync(PizzaSize size) Task~Pizza~
 		+GetPricingSettingsAsync() Task~PricingSettings~
 		+GetToppingAsync(string name) Task~Topping~
 		+CreateOrderAsync(string customerName, IEnumerable~PizzaOrderRequest~ pizzas) Task~Order~
 		+CalculateTotalsAsync(Order order) Task~OrderTotals~
+		+CreateOrderWithTotalsAsync(string customerName, IEnumerable~PizzaOrderRequest~ pizzas) Task~OrderWithTotals~
 	}
 ```
 
 Corrisponde a [`OrderCompositionService.cs`](../../PizzaShop.Domain/OrderCompositionService.cs): è il servizio
 applicativo che **orchestra la composizione dell'ordine**, ed è il **consumer esplicito** di
-`IPizzaSizeRepository` e `IPricingSettingsRepository` che nelle versioni precedenti di questo diagramma era
-solo citato a parole ("un livello applicativo non mostrato") senza comparire come classe reale.
+`IPizzaSizeRepository`, `IPricingSettingsRepository` e `IToppingRepository` che nelle versioni precedenti di
+questo diagramma era solo citato a parole ("un livello applicativo non mostrato") senza comparire come classe
+reale.
 
-- `_pizzaSizeRepository`, `_pricingSettingsRepository`, `_toppingCatalog`: dipendenze private iniettate nel
-  costruttore, tenute per tutta la vita del servizio.
+- `_pizzaSizeRepository`, `_pricingSettingsRepository`, `_toppingRepository`: dipendenze private iniettate nel
+  costruttore, tenute per tutta la vita del servizio, gestite in modo simmetrico.
 - `CreatePizzaAsync(PizzaSize size)`: risolve il prezzo base tramite `IPizzaSizeRepository.GetBasePriceAsync(size)`
   e costruisce un `Pizza` già pronto (`new Pizza(size, basePrice)`).
 - `GetPricingSettingsAsync()`: delega a `IPricingSettingsRepository.GetAsync()`.
-- `GetToppingAsync(string name)`: delega a `ToppingCatalog.GetAsync(name)`.
+- `GetToppingAsync(string name)`: delega a `IToppingRepository.GetByNameAsync(name)`.
 - `CreateOrderAsync(string customerName, IEnumerable<PizzaOrderRequest> pizzas)`: crea un `Order` vuoto per
   `customerName`, poi per ogni `PizzaOrderRequest` (formato + nomi dei topping desiderati) crea la pizza tramite
   `CreatePizzaAsync`, applica ogni topping risolto tramite `GetToppingAsync` e `pizza.AddTopping(...)`, e infine fa
@@ -419,9 +413,22 @@ solo citato a parole ("un livello applicativo non mostrato") senza comparire com
 - `CalculateTotalsAsync(Order order)`: risolve le impostazioni correnti tramite `GetPricingSettingsAsync()` e le
   usa per calcolare `order.Subtotal()`, `order.DeliveryFee(settings)` e `order.GrandTotal(settings)`, restituendo
   il tutto racchiuso in un `OrderTotals`. Il chiamante non richiama mai questi tre metodi di `Order` da solo.
-- `PizzaOrderRequest` e `OrderTotals` sono due `record` di supporto: il primo descrive "una pizza da comporre"
-  (input di `CreateOrderAsync`), il secondo il risultato del calcolo dei totali (output di `CalculateTotalsAsync`).
-  Nessuno dei due contiene logica: sono semplici contenitori di dati, come `PricingSettings` o `Topping`.
+- `CreateOrderWithTotalsAsync(string customerName, IEnumerable<PizzaOrderRequest> pizzas)`: metodo di
+  convenienza a **chiamata singola** che risolve `GetPricingSettingsAsync()` **una sola volta** e la passa ai due
+  metodi privati condivisi `ComposeOrderAsync` e `ComputeTotals` (gli stessi usati internamente da
+  `CreateOrderAsync` e `CalculateTotalsAsync`), restituendo entrambi i risultati in un `OrderWithTotals`. Questo
+  evita una seconda interrogazione ridondante al repository delle impostazioni di prezzo quando composizione e
+  totale sono richiesti nella stessa chiamata. Serve per i casi in cui il chiamante vuole solo comporre l'ordine
+  e conoscerne subito il prezzo finale, senza dover gestire due round trip separati (es. un vero controller API
+  che riceve una singola richiesta HTTP dal cliente). `CreateOrderAsync` e `CalculateTotalsAsync` restano
+  comunque disponibili separatamente (ciascuno risolve le proprie impostazioni al bisogno), perché utili quando
+  composizione e calcolo del totale vanno verificati come passi distinti (è il caso dei test BDD, dove un passo
+  Given compone l'ordine e un passo When successivo ne calcola il totale).
+- `PizzaOrderRequest`, `OrderTotals` e `OrderWithTotals` sono tre `record` di supporto: il primo descrive "una
+  pizza da comporre" (input di `CreateOrderAsync`), il secondo il risultato del calcolo dei totali (output di
+  `CalculateTotalsAsync`), il terzo combina un `Order` già composto con il suo `OrderTotals` (output di
+  `CreateOrderWithTotalsAsync`). Nessuno dei tre contiene logica: sono semplici contenitori di dati, come
+  `PricingSettings` o `Topping`.
 
 È questa classe — non `Pizza`, non `Order` — a essere usata direttamente da `Program.cs` (il composition root
 della console demo) e dagli step definitions BDD (`CommonPizzaSteps`, `OrderSteps`): loro chiamano
@@ -444,12 +451,11 @@ classDiagram
 	Pizza --> PizzaSize : Size
 	Pizza ..> PricingSettings : usa
 	Order ..> PricingSettings : usa
-	ToppingCatalog --> IToppingRepository : usa
 	IPricingSettingsRepository ..> PricingSettings : restituisce
 	IPizzaSizeRepository ..> PizzaSize : usa
 	OrderCompositionService --> IPizzaSizeRepository : usa
 	OrderCompositionService --> IPricingSettingsRepository : usa
-	OrderCompositionService --> ToppingCatalog : usa
+	OrderCompositionService --> IToppingRepository : usa
 	OrderCompositionService ..> Pizza : crea
 	OrderCompositionService ..> Order : crea
 	OrderCompositionService ..> PizzaOrderRequest : riceve
@@ -487,10 +493,9 @@ nel codice che realizza quella relazione.
 
 ```
 Pizza --> PizzaSize : Size
-ToppingCatalog --> IToppingRepository : usa
 OrderCompositionService --> IPizzaSizeRepository : usa
 OrderCompositionService --> IPricingSettingsRepository : usa
-OrderCompositionService --> ToppingCatalog : usa
+OrderCompositionService --> IToppingRepository : usa
 ```
 
 > `IPricingSettingsRepository ..> PricingSettings : restituisce` usa invece una dipendenza tratteggiata
@@ -502,13 +507,10 @@ arrivo, tenuto come campo/proprietà. È una relazione più "debole" dell'aggreg
 un singolo valore che la classe usa come proprio attributo tipizzato.
 
 - `Pizza --> PizzaSize : Size`: `Pizza` ha un riferimento diretto a `PizzaSize` tramite la proprietà `Size`.
-- `ToppingCatalog --> IToppingRepository : usa`: `ToppingCatalog` tiene un riferimento diretto
-  all'interfaccia `IToppingRepository` (il campo privato `_repository` visto nella sezione 4.5) — lo tiene
-  come dipendenza stabile per tutta la vita dell'oggetto, non lo crea/scarta a ogni chiamata come farebbe una
-  dipendenza (`..>`).
-- `OrderCompositionService --> IPizzaSizeRepository/IPricingSettingsRepository/ToppingCatalog : usa`: allo
-  stesso modo, `OrderCompositionService` tiene tutte e tre come campi privati iniettati nel costruttore
-  (sezione [4.10](#410-ordercompositionservice)) — dipendenze stabili, non temporanee.
+- `OrderCompositionService --> IPizzaSizeRepository/IPricingSettingsRepository/IToppingRepository : usa`:
+  `OrderCompositionService` tiene tutte e tre come campi privati iniettati nel costruttore (sezione
+  [4.9](#49-ordercompositionservice)) — dipendenze stabili per tutta la vita dell'oggetto, non
+  create/scartate a ogni chiamata come farebbe una dipendenza (`..>`).
 
 ### 5.3 Dipendenza (`..>`) — "usa, senza possedere"
 
@@ -530,8 +532,8 @@ La freccia **tratteggiata** (`..>`) indica una **dipendenza**: `Pizza` e `Order`
 un `PricingSettings` come **parametro di metodo** (`AddTopping(..., settings)`, `HasFreeDelivery(settings)`,
 `DeliveryFee(settings)`, `GrandTotal(settings)`), lo leggono e lo scartano — non lo tengono come campo. È
 esattamente questa scelta (dipendenza "di passaggio" invece di un'associazione stabile come
-`ToppingCatalog --> IToppingRepository`) che permette a `Pizza` e `Order` di restare entità di dominio pure,
-senza mai dipendere direttamente da un repository.
+`OrderCompositionService --> IToppingRepository`) che permette a `Pizza` e `Order` di restare entità di
+dominio pure, senza mai dipendere direttamente da un repository.
 
 `IPizzaSizeRepository ..> PizzaSize : usa` segue lo stesso principio delle relazioni "di ritorno" viste sopra
 per `IPricingSettingsRepository`: l'interfaccia usa `PizzaSize` come chiave di ricerca del proprio metodo
@@ -605,12 +607,6 @@ classDiagram
 			+decimal Price
 		}
 
-		class ToppingCatalog {
-			-IToppingRepository _repository
-			+GetAllAsync() Task~IReadOnlyCollection~Topping~~
-			+GetAsync(string name) Task~Topping~
-		}
-
 		class IToppingRepository {
 			<<interface>>
 			+GetAllAsync() Task~IReadOnlyCollection~Topping~~
@@ -645,7 +641,7 @@ classDiagram
 		class OrderCompositionService {
 			-IPizzaSizeRepository _pizzaSizeRepository
 			-IPricingSettingsRepository _pricingSettingsRepository
-			-ToppingCatalog _toppingCatalog
+			-IToppingRepository _toppingRepository
 			+CreatePizzaAsync(PizzaSize size) Task~Pizza~
 			+GetPricingSettingsAsync() Task~PricingSettings~
 			+GetToppingAsync(string name) Task~Topping~
@@ -659,12 +655,11 @@ classDiagram
 	Pizza --> PizzaSize : Size
 	Pizza ..> PricingSettings : usa
 	Order ..> PricingSettings : usa
-	ToppingCatalog --> IToppingRepository : usa
 	IPricingSettingsRepository ..> PricingSettings : restituisce
 	IPizzaSizeRepository ..> PizzaSize : usa
 	OrderCompositionService --> IPizzaSizeRepository : usa
 	OrderCompositionService --> IPricingSettingsRepository : usa
-	OrderCompositionService --> ToppingCatalog : usa
+	OrderCompositionService --> IToppingRepository : usa
 	OrderCompositionService ..> Pizza : crea
 	OrderCompositionService ..> Order : crea
 	OrderCompositionService ..> PizzaOrderRequest : riceve
@@ -681,15 +676,15 @@ nell'immagine renderizzata, che questo è il code-view di un singolo componente 
 1. Un `Order` **aggrega** più `Pizza` (relazione 1→molti).
 2. Ogni `Pizza` **aggrega** da 0 a molti `Topping` (relazione 1→0..molti) e **ha un** `PizzaSize`.
 3. `OrderCompositionService` **ha un riferimento a** `IPizzaSizeRepository`, `IPricingSettingsRepository` e
-   `ToppingCatalog` (tutte e tre iniettate nel costruttore), e **crea** ogni `Pizza` (`CreatePizzaAsync`) oltre
-   all'`Order` stesso (`CreateOrderAsync`), a partire da una lista di `PizzaOrderRequest`. Calcola anche i
-   totali finali (`CalculateTotalsAsync`), restituendo un `OrderTotals`. È lei il consumer esplicito di questi
-   repository e l'unico punto che assembla un ordine completo — né `Pizza` né `Order` li chiamano mai
-   direttamente, e nessuno all'esterno crea un `Order` con `new` o lo popola direttamente.
-4. `ToppingCatalog` **ha un riferimento a** `IToppingRepository` per leggere topping e prezzi da un database,
-   senza conoscerne i dettagli implementativi (delegati al Data Access Component). Allo stesso modo,
-   `IPizzaSizeRepository` **usa** `PizzaSize` per recuperare da un database il prezzo base associato a quel
-   formato.
+   `IToppingRepository` (tutte e tre iniettate nel costruttore, in modo simmetrico), e **crea** ogni `Pizza`
+   (`CreatePizzaAsync`) oltre all'`Order` stesso (`CreateOrderAsync`), a partire da una lista di
+   `PizzaOrderRequest`. Calcola anche i totali finali (`CalculateTotalsAsync`), restituendo un `OrderTotals`.
+   È lei il consumer esplicito di questi repository e l'unico punto che assembla un ordine completo — né
+   `Pizza` né `Order` li chiamano mai direttamente, e nessuno all'esterno crea un `Order` con `new` o lo
+   popola direttamente.
+4. `IToppingRepository` legge topping e prezzi da un database, senza esporne i dettagli implementativi
+   (delegati al Data Access Component). Allo stesso modo, `IPizzaSizeRepository` **usa** `PizzaSize` per
+   recuperare da un database il prezzo base associato a quel formato.
 5. `Pizza` e `Order` **dipendono da** `PricingSettings` (limite topping e soglia di consegna gratuita
    configurabili dal proprietario), ricevuto come parametro invece che tramite un repository iniettato:
    restano così entità di dominio pure, mentre è `OrderCompositionService` (tramite

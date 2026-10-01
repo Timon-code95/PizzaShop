@@ -9,14 +9,14 @@ namespace PizzaShop.Bdd.Tests.Steps;
 [Binding]
 public class ToppingLimitSteps(
     PizzaOrderContext context,
-    ToppingCatalog toppingCatalog,
+    IToppingRepository toppingRepository,
     IPricingSettingsRepository pricingSettingsRepository)
 {
     [Given(@"che la pizza ha già 5 ingredienti extra")]
     public async Task DatoCheLaPizzaHaGiaCinqueIngredientiExtra()
     {
         var settings = await pricingSettingsRepository.GetAsync();
-        var toppings = await toppingCatalog.GetAllAsync();
+        var toppings = await toppingRepository.GetAllAsync();
 
         foreach (var topping in toppings.Take(settings.MaxToppingsPerPizza))
         {
@@ -30,7 +30,7 @@ public class ToppingLimitSteps(
         var settings = await pricingSettingsRepository.GetAsync();
         context.LastError = await Record.ExceptionAsync(async () =>
         {
-            var topping = await toppingCatalog.GetAsync(nomeIngrediente);
+            var topping = await toppingRepository.GetByNameAsync(nomeIngrediente);
             context.CurrentPizza!.AddTopping(topping, settings);
         });
     }

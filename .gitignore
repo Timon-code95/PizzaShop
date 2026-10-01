@@ -40,3 +40,5 @@ Thumbs.db
 
 # Build artifacts
 artifacts/
+*.pptx
+/docs/presentazione/Generate-Presentation.ps1

@@ -8,16 +8,15 @@ Console.WriteLine("=== PizzaShop - Demo ordine ===");
 Console.WriteLine();
 
 // Composizione delle dipendenze: oggi le implementazioni sono in-memory (dati hardcoded), ma essendo
-// PizzaSize.cs/ToppingCatalog.cs/Order.cs scritti contro le sole interfacce, in futuro basterà sostituire
+// PizzaSize.cs/Order.cs scritti contro le sole interfacce, in futuro basterà sostituire
 // queste implementazioni con implementazioni vere basate su database, senza toccare il resto del codice.
 // OrderCompositionService è il punto unico che parla con i repository (IPizzaSizeRepository,
-// IPricingSettingsRepository, ToppingCatalog) e l'unico che crea e assembla l'Order: Pizza e Order
+// IPricingSettingsRepository, IToppingRepository) e l'unico che crea e assembla l'Order: Pizza e Order
 // restano entità di dominio pure.
-var toppingCatalog = new ToppingCatalog(new InMemoryToppingRepository());
 var orderComposer = new OrderCompositionService(
     new InMemoryPizzaSizeRepository(),
     new InMemoryPricingSettingsRepository(),
-    toppingCatalog);
+    new InMemoryToppingRepository());
 
 var order = await orderComposer.CreateOrderAsync(
     "Mario Rossi",
