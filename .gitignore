@@ -42,3 +42,6 @@ Thumbs.db
 artifacts/
 *.pptx
 /docs/presentazione/Generate-Presentation.ps1
+
+# Reqnroll generated code-behind
+*.feature.cs
