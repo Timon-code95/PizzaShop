@@ -18,6 +18,9 @@
     <Compile Remove="PizzaShop.Domain\**\*.cs" />
     <Compile Remove="PizzaShop.Infrastructure.InMemory\**\*.cs" />
     <Compile Remove="PizzaShop.Bdd.Tests\**\*.cs" />
+    <None Remove="PizzaShop.Domain\**" />
+    <None Remove="PizzaShop.Infrastructure.InMemory\**" />
+    <None Remove="PizzaShop.Bdd.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
