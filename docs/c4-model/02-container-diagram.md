@@ -20,6 +20,8 @@ parte per distinguerli chiaramente dal sistema PizzaShop, come nel Context Diagr
 C4Container
 	title Container Diagram — PizzaShop (caso d'uso: Sistema Ordini)
 
+	UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
+
 	Person(cliente, "Cliente")
 
 	System_Boundary(pizzaShop, "PizzaShop") {
@@ -46,8 +48,8 @@ C4Container
 
 	UpdateRelStyle(cliente, ui, $textColor="white", $lineColor="white", $offsetY="-10")
 	UpdateRelStyle(ui, backend, $textColor="white", $lineColor="white", $offsetX="-40", $offsetY="-15")
-	UpdateRelStyle(testBdd, backend, $textColor="white", $lineColor="white", $offsetY="15")
-	UpdateRelStyle(backend, database, $textColor="white", $lineColor="white", $offsetY="-10")
+	UpdateRelStyle(testBdd, backend, $textColor="white", $lineColor="white", $offsetX="-50", $offsetY="-10")
+	UpdateRelStyle(backend, database, $textColor="white", $lineColor="white", $offsetX="-50", $offsetY="-10")
 	UpdateRelStyle(backend, notifiche, $textColor="white", $lineColor="white", $offsetX="-60", $offsetY="-25")
 	UpdateRelStyle(backend, identityProvider, $textColor="white", $lineColor="white", $offsetX="-20", $offsetY="-5")
 	UpdateRelStyle(backend, gatewayPagamenti, $textColor="white", $lineColor="white", $offsetX="-15", $offsetY="45")
