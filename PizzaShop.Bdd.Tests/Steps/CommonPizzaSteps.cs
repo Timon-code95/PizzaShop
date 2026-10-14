@@ -23,6 +23,29 @@ public class CommonPizzaSteps(
     [When(@"aggiungo i seguenti ingredienti extra ""(.*)""")]
     public async Task QuandoAggiungoISeguentiIngredientiExtra(string ingredienti)
     {
+        await AggiungiIngredientiAsync(ingredienti);
+    }
+
+    [When(@"provo ad aggiungere i seguenti ingredienti extra ""(.*)""")]
+    public async Task QuandoProvoAdAggiungereISeguentiIngredientiExtra(string ingredienti)
+    {
+        context.LastError = await Record.ExceptionAsync(() => AggiungiIngredientiAsync(ingredienti));
+    }
+
+    [Then(@"non dovrebbe essere sollevato alcun errore")]
+    public void AlloraNonDovrebbeEssereSollevatoAlcunErrore()
+    {
+        Assert.Null(context.LastError);
+    }
+
+    [Then(@"la pizza dovrebbe avere (\d+) ingredient[ei] extra")]
+    public void AlloraLaPizzaDovrebbeAvereNIngredientiExtra(int numeroIngredienti)
+    {
+        Assert.Equal(numeroIngredienti, context.CurrentPizza!.Toppings.Count);
+    }
+
+    private async Task AggiungiIngredientiAsync(string ingredienti)
+    {
         var settings = await orderComposer.GetPricingSettingsAsync();
 
         foreach (var nome in SplitIngredienti(ingredienti))

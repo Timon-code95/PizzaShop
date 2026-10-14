@@ -12,34 +12,16 @@ public class ToppingLimitSteps(
     IToppingRepository toppingRepository,
     IPricingSettingsRepository pricingSettingsRepository)
 {
-    [Given(@"che la pizza ha già 5 ingredienti extra")]
-    public async Task DatoCheLaPizzaHaGiaCinqueIngredientiExtra()
+    [Given(@"che la pizza ha già (\d+) ingredienti extra")]
+    public async Task DatoCheLaPizzaHaGiaNIngredientiExtra(int numeroIngredienti)
     {
         var settings = await pricingSettingsRepository.GetAsync();
         var toppings = await toppingRepository.GetAllAsync();
 
-        foreach (var topping in toppings.Take(settings.MaxToppingsPerPizza))
+        foreach (var topping in toppings.Take(numeroIngredienti))
         {
             context.CurrentPizza!.AddTopping(topping, settings);
         }
-    }
-
-    [When(@"provo ad aggiungere un ulteriore ingrediente extra ""(.*)""")]
-    public async Task QuandoProvoAdAggiungereUnUlterioreIngredienteExtra(string nomeIngrediente)
-    {
-        var settings = await pricingSettingsRepository.GetAsync();
-        context.LastError = await Record.ExceptionAsync(async () =>
-        {
-            var topping = await toppingRepository.GetByNameAsync(nomeIngrediente);
-            context.CurrentPizza!.AddTopping(topping, settings);
-        });
-    }
-
-    [Then(@"l'aggiunta degli ingredienti extra dovrebbe andare a buon fine")]
-    public async Task AlloraLAggiuntaDegliIngredientiExtraDovrebbeAndareABuonFine()
-    {
-        var settings = await pricingSettingsRepository.GetAsync();
-        Assert.Equal(settings.MaxToppingsPerPizza, context.CurrentPizza!.Toppings.Count);
     }
 
     [Then(@"dovrebbe essere sollevato un errore che segnala il superamento del limite di ingredienti extra")]
