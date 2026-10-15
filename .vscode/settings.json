@@ -3,5 +3,6 @@
   "cucumberautocomplete.syncfeatures": "PizzaShop.Bdd.Tests/Features/**/*.feature",
   "cucumberautocomplete.strictGherkinCompletion": true,
   "cucumberautocomplete.skipDocStringsFormat": true,
-  "markdown-mermaid.darkModeTheme": "dark"
+  "markdown-mermaid.darkModeTheme": "dark",
+  "dotnet.defaultSolution": "GherkinCucumberDemo.slnx"
 }
