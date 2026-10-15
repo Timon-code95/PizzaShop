@@ -1,0 +1,7 @@
+{
+  "cucumberautocomplete.steps": ["PizzaShop.Bdd.Tests/Steps/**/*.cs"],
+  "cucumberautocomplete.syncfeatures": "PizzaShop.Bdd.Tests/Features/**/*.feature",
+  "cucumberautocomplete.strictGherkinCompletion": true,
+  "cucumberautocomplete.skipDocStringsFormat": true,
+  "markdown-mermaid.darkModeTheme": "dark"
+}
